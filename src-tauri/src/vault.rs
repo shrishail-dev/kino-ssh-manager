@@ -55,6 +55,15 @@ pub struct Host {
     /// Drives the OS icon shown in the host list.
     #[serde(default)]
     pub os: Option<String>,
+    /// Connection mode ("direct" or "agent")
+    #[serde(default)]
+    pub connection_mode: Option<String>,
+    /// Target Agent ID if connection_mode is "agent"
+    #[serde(default)]
+    pub agent_id: Option<String>,
+    /// Relay URL if connection_mode is "agent"
+    #[serde(default)]
+    pub relay_url: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]

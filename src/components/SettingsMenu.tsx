@@ -110,6 +110,20 @@ export function SettingsMenu({ onLock }: Props) {
               <option value={60}>1 hour</option>
             </select>
           </div>
+          
+          <div className="settings-divider" />
+          
+          <div className="settings-row">
+            <span>Relay Server URL</span>
+            <input 
+              type="text" 
+              className="settings-select"
+              style={{ padding: "4px 8px", fontSize: "13px" }}
+              placeholder="wss://relay.kino.app" 
+              value={useVaultStore.getState().defaultRelayUrl} 
+              onChange={(e) => useVaultStore.getState().setDefaultRelayUrl(e.target.value)} 
+            />
+          </div>
 
           <div className="settings-divider" />
 

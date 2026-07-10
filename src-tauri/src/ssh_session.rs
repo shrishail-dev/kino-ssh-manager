@@ -13,6 +13,95 @@ use tauri::{AppHandle, Emitter};
 use tokio::sync::mpsc;
 
 use crate::vault::Host;
+use std::pin::Pin;
+use std::task::{Context, Poll};
+use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
+
+pub enum NetStream {
+    Tcp(tokio::net::TcpStream),
+    Duplex(tokio::io::DuplexStream),
+}
+
+impl AsyncRead for NetStream {
+    fn poll_read(self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &mut ReadBuf<'_>) -> Poll<std::io::Result<()>> {
+        match self.get_mut() {
+            NetStream::Tcp(s) => Pin::new(s).poll_read(cx, buf),
+            NetStream::Duplex(s) => Pin::new(s).poll_read(cx, buf),
+        }
+    }
+}
+
+impl AsyncWrite for NetStream {
+    fn poll_write(self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &[u8]) -> Poll<std::io::Result<usize>> {
+        match self.get_mut() {
+            NetStream::Tcp(s) => Pin::new(s).poll_write(cx, buf),
+            NetStream::Duplex(s) => Pin::new(s).poll_write(cx, buf),
+        }
+    }
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<std::io::Result<()>> {
+        match self.get_mut() {
+            NetStream::Tcp(s) => Pin::new(s).poll_flush(cx),
+            NetStream::Duplex(s) => Pin::new(s).poll_flush(cx),
+        }
+    }
+    fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<std::io::Result<()>> {
+        match self.get_mut() {
+            NetStream::Tcp(s) => Pin::new(s).poll_shutdown(cx),
+            NetStream::Duplex(s) => Pin::new(s).poll_shutdown(cx),
+        }
+    }
+}
+
+pub async fn connect_to_host(host: &Host) -> Result<NetStream, String> {
+    if host.connection_mode.as_deref() == Some("agent") {
+        let relay_url = host.relay_url.as_deref().ok_or("Relay URL not provided for Agent connection mode")?;
+        let agent_id = host.agent_id.as_deref().ok_or("Agent ID not provided for Agent connection mode")?;
+        
+        let ws_url = format!("{}/ws/manager/request?agent_id={}", relay_url, agent_id);
+        let (ws_stream, _) = tokio_tungstenite::connect_async(&ws_url)
+            .await
+            .map_err(|e| format!("Failed to connect to relay: {}", e))?;
+            
+        let (mut ws_tx, mut ws_rx) = futures_util::StreamExt::split(ws_stream);
+        let (client_stream, backend_stream) = tokio::io::duplex(65536);
+        let (mut backend_rx, mut backend_tx) = tokio::io::split(backend_stream);
+        
+        tokio::spawn(async move {
+            use tokio::io::AsyncWriteExt;
+            while let Some(msg) = futures_util::StreamExt::next(&mut ws_rx).await {
+                if let Ok(tokio_tungstenite::tungstenite::protocol::Message::Binary(data)) = msg {
+                    if backend_tx.write_all(&data).await.is_err() {
+                        break;
+                    }
+                }
+            }
+        });
+        
+        tokio::spawn(async move {
+            use tokio::io::AsyncReadExt;
+            use futures_util::SinkExt;
+            let mut buf = [0u8; 8192];
+            loop {
+                match backend_rx.read(&mut buf).await {
+                    Ok(0) => break,
+                    Ok(n) => {
+                        if ws_tx.send(tokio_tungstenite::tungstenite::protocol::Message::Binary(buf[..n].into())).await.is_err() {
+                            break;
+                        }
+                    }
+                    Err(_) => break,
+                }
+            }
+        });
+        
+        Ok(NetStream::Duplex(client_stream))
+    } else {
+        let stream = tokio::net::TcpStream::connect((host.hostname.as_str(), host.port))
+            .await
+            .map_err(|e| format!("Failed to connect to {}:{}: {}", host.hostname, host.port, e))?;
+        Ok(NetStream::Tcp(stream))
+    }
+}
 
 pub enum TermCommand {
     Data(Vec<u8>),
@@ -105,9 +194,11 @@ pub async fn connect(
         remote_routes: Arc::clone(&remote_routes),
     };
 
+    let stream = connect_to_host(&host).await?;
+
     let mut handle = tokio::time::timeout(
         Duration::from_secs(15),
-        client::connect(config, (host.hostname.as_str(), host.port), handler),
+        client::connect_stream(config, stream, handler),
     )
     .await
     .map_err(|_| "Connection timed out".to_string())?

@@ -29,6 +29,9 @@ export function HostForm({ host, onClose }: Props) {
   const [notes, setNotes] = useState(host?.notes ?? "");
   const [group, setGroup] = useState(host?.group ?? "");
   const [os, setOs] = useState(host?.os ?? "");
+  const [connectionMode, setConnectionMode] = useState(host?.connection_mode ?? "direct");
+  const [agentId, setAgentId] = useState(host?.agent_id ?? "");
+  const [relayUrl, setRelayUrl] = useState(host?.relay_url ?? useVaultStore.getState().defaultRelayUrl);
 
   const TAG_COLORS = ["#f38ba8", "#fab387", "#f9e2af", "#a6e3a1", "#89b4fa", "#cba6f7", "#4c7ebf"];
 
@@ -104,8 +107,12 @@ export function HostForm({ host, onClose }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name || !hostname || !username) {
+    if (connectionMode === "direct" && (!name || !hostname || !username)) {
       setError("Name, hostname, and username are required");
+      return;
+    }
+    if (connectionMode === "agent" && (!name || !agentId || !relayUrl || !username)) {
+      setError("Name, Agent ID, Relay URL, and username are required");
       return;
     }
     if (defaultAuth === "Password" && !password) {
@@ -136,6 +143,9 @@ export function HostForm({ host, onClose }: Props) {
         notes: notes.trim() || null,
         group: group.trim() || null,
         os: os || null,
+        connection_mode: connectionMode,
+        agent_id: agentId || null,
+        relay_url: relayUrl || null,
       });
       onClose();
     } catch (e: any) {
@@ -159,26 +169,80 @@ export function HostForm({ host, onClose }: Props) {
             <label>Display Name</label>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="My Server" />
           </div>
-          <div className="form-row two-col">
-            <div>
-              <label>Hostname / IP</label>
-              <input
-                value={hostname}
-                onChange={(e) => setHostname(e.target.value)}
-                placeholder="192.168.1.1"
-              />
-            </div>
-            <div>
-              <label>Port</label>
-              <input
-                type="number"
-                value={port}
-                onChange={(e) => setPort(Number(e.target.value))}
-                min={1}
-                max={65535}
-              />
+          <div className="form-row">
+            <label>Connection Mode</label>
+            <div className="auth-tabs">
+              <button
+                type="button"
+                className={connectionMode === "direct" ? "active" : ""}
+                onClick={() => setConnectionMode("direct")}
+              >
+                Direct SSH
+              </button>
+              <button
+                type="button"
+                className={connectionMode === "agent" ? "active" : ""}
+                onClick={() => {
+                  setConnectionMode("agent");
+                  if (!agentId) setAgentId(crypto.randomUUID());
+                }}
+              >
+                Kino Agent
+              </button>
             </div>
           </div>
+          
+          {connectionMode === "direct" ? (
+            <div className="form-row two-col">
+              <div>
+                <label>Hostname / IP</label>
+                <input
+                  value={hostname}
+                  onChange={(e) => setHostname(e.target.value)}
+                  placeholder="192.168.1.1"
+                />
+              </div>
+              <div>
+                <label>Port</label>
+                <input
+                  type="number"
+                  value={port}
+                  onChange={(e) => setPort(Number(e.target.value))}
+                  min={1}
+                  max={65535}
+                />
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="form-row two-col">
+                <div>
+                  <label>Relay URL</label>
+                  <input
+                    value={relayUrl}
+                    onChange={(e) => setRelayUrl(e.target.value)}
+                    placeholder="wss://relay.kino.app"
+                  />
+                </div>
+                <div>
+                  <label>Agent ID</label>
+                  <input
+                    value={agentId}
+                    onChange={(e) => setAgentId(e.target.value)}
+                    placeholder="UUID or any unique string"
+                  />
+                </div>
+              </div>
+              <div className="form-row">
+                <div style={{ background: "var(--surface)", padding: "12px", borderRadius: "8px", fontSize: "13px" }}>
+                  <p style={{ margin: "0 0 8px 0", color: "var(--subtle)" }}>Run this command on the target server to install and start the agent:</p>
+                  <code style={{ background: "var(--base)", padding: "6px 8px", display: "block", borderRadius: "4px", color: "var(--text)" }}>
+                    kino-agent --relay-url {relayUrl} --agent-id {agentId}
+                  </code>
+                </div>
+              </div>
+            </>
+          )}
           <div className="form-row">
             <label>Username</label>
             <input

@@ -34,6 +34,9 @@ export interface Host {
   notes?: string | null;
   group?: string | null;
   os?: string | null;
+  connection_mode?: string | null;
+  agent_id?: string | null;
+  relay_url?: string | null;
 }
 
 export interface Snippet {
@@ -179,11 +182,13 @@ interface VaultStore {
   activeTabIds: Record<string, string | null>;
   theme: string;
   idleLockMinutes: number;
+  defaultRelayUrl: string;
   activeForwards: Set<string>;
 
   checkVaultExists: () => Promise<boolean>;
   setTheme: (id: string) => void;
   setIdleLockMinutes: (minutes: number) => void;
+  setDefaultRelayUrl: (url: string) => void;
   startForward: (sessionId: string, forward: PortForward, host: Host) => Promise<void>;
   stopForward: (sessionId: string, forwardId: string) => Promise<void>;
   unlock: (password: string) => Promise<void>;
@@ -273,6 +278,7 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
   activeTabIds: { "default": null },
   theme: localStorage.getItem("ssh-mgr:theme") ?? "catppuccin-mocha",
   idleLockMinutes: Number(localStorage.getItem("ssh-mgr:idle-lock") ?? "0"),
+  defaultRelayUrl: localStorage.getItem("ssh-mgr:relay-url") ?? "",
   activeForwards: new Set<string>(),
   recordingSessions: new Set<string>(),
   updateInfo: null,
@@ -285,6 +291,11 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
   setIdleLockMinutes: (minutes) => {
     localStorage.setItem("ssh-mgr:idle-lock", String(minutes));
     set({ idleLockMinutes: minutes });
+  },
+  
+  setDefaultRelayUrl: (url) => {
+    localStorage.setItem("ssh-mgr:relay-url", url);
+    set({ defaultRelayUrl: url });
   },
 
   startForward: async (sessionId, forward, host) => {

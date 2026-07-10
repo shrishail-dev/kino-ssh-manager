@@ -77,7 +77,11 @@ async fn fetch_fingerprint(host: &Host) -> Result<String, String> {
         fingerprint: Arc::clone(&fp_store),
     };
 
-    let _ = russh::client::connect(config, (host.hostname.as_str(), host.port), handler).await;
+    let stream = match crate::ssh_session::connect_to_host(host).await {
+        Ok(s) => s,
+        Err(e) => return Err(e),
+    };
+    let _ = russh::client::connect_stream(config, stream, handler).await;
 
     let fp = fp_store.lock().await.take();
     fp.ok_or_else(|| "Failed to fetch host key (connection timed out or refused)".to_string())
