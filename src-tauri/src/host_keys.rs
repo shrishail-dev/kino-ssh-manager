@@ -180,7 +180,10 @@ mod tests {
     #[test]
     fn direct_hosts_key_on_hostname_and_port() {
         assert_eq!(key_for(&host("10.0.0.1", None, None)), "10.0.0.1:22");
-        assert_eq!(key_for(&host("10.0.0.1", Some("direct"), None)), "10.0.0.1:22");
+        assert_eq!(
+            key_for(&host("10.0.0.1", Some("direct"), None)),
+            "10.0.0.1:22"
+        );
     }
 
     #[test]

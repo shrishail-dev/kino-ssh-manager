@@ -23,7 +23,11 @@ pub enum NetStream {
 }
 
 impl AsyncRead for NetStream {
-    fn poll_read(self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &mut ReadBuf<'_>) -> Poll<std::io::Result<()>> {
+    fn poll_read(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<std::io::Result<()>> {
         match self.get_mut() {
             NetStream::Tcp(s) => Pin::new(s).poll_read(cx, buf),
             NetStream::Duplex(s) => Pin::new(s).poll_read(cx, buf),
@@ -32,7 +36,11 @@ impl AsyncRead for NetStream {
 }
 
 impl AsyncWrite for NetStream {
-    fn poll_write(self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &[u8]) -> Poll<std::io::Result<usize>> {
+    fn poll_write(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &[u8],
+    ) -> Poll<std::io::Result<usize>> {
         match self.get_mut() {
             NetStream::Tcp(s) => Pin::new(s).poll_write(cx, buf),
             NetStream::Duplex(s) => Pin::new(s).poll_write(cx, buf),
@@ -54,18 +62,24 @@ impl AsyncWrite for NetStream {
 
 pub async fn connect_to_host(host: &Host) -> Result<NetStream, String> {
     if host.connection_mode.as_deref() == Some("agent") {
-        let relay_url = host.relay_url.as_deref().ok_or("Relay URL not provided for Agent connection mode")?;
-        let agent_id = host.agent_id.as_deref().ok_or("Agent ID not provided for Agent connection mode")?;
-        
+        let relay_url = host
+            .relay_url
+            .as_deref()
+            .ok_or("Relay URL not provided for Agent connection mode")?;
+        let agent_id = host
+            .agent_id
+            .as_deref()
+            .ok_or("Agent ID not provided for Agent connection mode")?;
+
         let ws_url = format!("{}/ws/manager/request?agent_id={}", relay_url, agent_id);
         let (ws_stream, _) = tokio_tungstenite::connect_async(&ws_url)
             .await
             .map_err(|e| format!("Failed to connect to relay: {}", e))?;
-            
+
         let (mut ws_tx, mut ws_rx) = futures_util::StreamExt::split(ws_stream);
         let (client_stream, backend_stream) = tokio::io::duplex(65536);
         let (mut backend_rx, mut backend_tx) = tokio::io::split(backend_stream);
-        
+
         tokio::spawn(async move {
             use tokio::io::AsyncWriteExt;
             while let Some(msg) = futures_util::StreamExt::next(&mut ws_rx).await {
@@ -76,16 +90,22 @@ pub async fn connect_to_host(host: &Host) -> Result<NetStream, String> {
                 }
             }
         });
-        
+
         tokio::spawn(async move {
-            use tokio::io::AsyncReadExt;
             use futures_util::SinkExt;
+            use tokio::io::AsyncReadExt;
             let mut buf = [0u8; 8192];
             loop {
                 match backend_rx.read(&mut buf).await {
                     Ok(0) => break,
                     Ok(n) => {
-                        if ws_tx.send(tokio_tungstenite::tungstenite::protocol::Message::Binary(buf[..n].into())).await.is_err() {
+                        if ws_tx
+                            .send(tokio_tungstenite::tungstenite::protocol::Message::Binary(
+                                buf[..n].into(),
+                            ))
+                            .await
+                            .is_err()
+                        {
                             break;
                         }
                     }
@@ -93,12 +113,17 @@ pub async fn connect_to_host(host: &Host) -> Result<NetStream, String> {
                 }
             }
         });
-        
+
         Ok(NetStream::Duplex(client_stream))
     } else {
         let stream = tokio::net::TcpStream::connect((host.hostname.as_str(), host.port))
             .await
-            .map_err(|e| format!("Failed to connect to {}:{}: {}", host.hostname, host.port, e))?;
+            .map_err(|e| {
+                format!(
+                    "Failed to connect to {}:{}: {}",
+                    host.hostname, host.port, e
+                )
+            })?;
         Ok(NetStream::Tcp(stream))
     }
 }

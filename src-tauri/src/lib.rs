@@ -647,11 +647,7 @@ fn export_host(host: vault::Host, path: String) -> Result<(), String> {
 /// master password - the recipient needs only this password to import it. Same
 /// Argon2 + AES-256-GCM envelope as the vault itself, with a fresh random salt.
 #[tauri::command]
-fn export_host_encrypted(
-    host: vault::Host,
-    path: String,
-    password: String,
-) -> Result<(), String> {
+fn export_host_encrypted(host: vault::Host, path: String, password: String) -> Result<(), String> {
     use aes_gcm::aead::OsRng;
     use rand_core::RngCore;
     use zeroize::Zeroize;
@@ -1462,7 +1458,10 @@ mod export_tests {
         // The whole point: secrets must not survive as plaintext on disk.
         let raw = std::fs::read_to_string(&path).unwrap();
         assert!(!raw.contains("hunter2"), "password leaked into the export");
-        assert!(!raw.contains("TOP-SECRET-KEY"), "private key leaked into the export");
+        assert!(
+            !raw.contains("TOP-SECRET-KEY"),
+            "private key leaked into the export"
+        );
 
         assert!(profile_is_encrypted(p.clone()).unwrap());
 
@@ -1476,7 +1475,11 @@ mod export_tests {
     #[test]
     fn wrong_password_is_rejected() {
         let dir = tempfile::tempdir().unwrap();
-        let p = dir.path().join("profile.sshm").to_string_lossy().to_string();
+        let p = dir
+            .path()
+            .join("profile.sshm")
+            .to_string_lossy()
+            .to_string();
         export_host_encrypted(sample_host(), p.clone(), "right".into()).unwrap();
         assert!(import_host_encrypted(p, "wrong".into()).is_err());
     }
@@ -1484,14 +1487,22 @@ mod export_tests {
     #[test]
     fn empty_export_password_is_rejected() {
         let dir = tempfile::tempdir().unwrap();
-        let p = dir.path().join("profile.sshm").to_string_lossy().to_string();
+        let p = dir
+            .path()
+            .join("profile.sshm")
+            .to_string_lossy()
+            .to_string();
         assert!(export_host_encrypted(sample_host(), p, String::new()).is_err());
     }
 
     #[test]
     fn plaintext_export_is_not_flagged_as_encrypted() {
         let dir = tempfile::tempdir().unwrap();
-        let p = dir.path().join("profile.sshm").to_string_lossy().to_string();
+        let p = dir
+            .path()
+            .join("profile.sshm")
+            .to_string_lossy()
+            .to_string();
         export_host(sample_host(), p.clone()).unwrap();
         assert!(!profile_is_encrypted(p.clone()).unwrap());
         // The plaintext importer must still accept legacy/unencrypted profiles.
