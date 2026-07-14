@@ -104,7 +104,7 @@ export function MetricsPanel({ sessionId, title, local, onClose }: Props) {
       <div className="modal metrics-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>
-            Metrics — {title}
+            Metrics - {title}
             <span className="metrics-live">
               <span className="metrics-live-dot" />
               live

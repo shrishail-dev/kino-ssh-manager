@@ -12,7 +12,7 @@ import {
 
 interface Props {
   sessionId: string;
-  /** Title shown in the header — host name for SSH, "Local Shell" for local. */
+  /** Title shown in the header - host name for SSH, "Local Shell" for local. */
   title: string;
   /** When true, run docker against the local daemon instead of over SSH. */
   local: boolean;
@@ -154,7 +154,7 @@ export function DockerPanel({ sessionId, title, local, onClose }: Props) {
       setCopiedLogs(true);
       setTimeout(() => setCopiedLogs(false), 1500);
     } catch {
-      /* clipboard unavailable — ignore */
+      /* clipboard unavailable - ignore */
     }
   }
 
@@ -275,7 +275,7 @@ export function DockerPanel({ sessionId, title, local, onClose }: Props) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal docker-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Docker — {title}</h2>
+          <h2>Docker - {title}</h2>
           <button className="icon-btn" onClick={onClose} title="Close">
             ✕
           </button>

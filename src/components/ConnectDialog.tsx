@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { hostTarget } from "../utils";
 import { DefaultAuth, Host, useVaultStore } from "../store";
 
 const PREF_KEY = (hostId: string) => `ssh-mgr:auth-pref:${hostId}`;
@@ -60,7 +61,7 @@ export function ConnectDialog({ host, onConnect, onCancel }: Props) {
           <div>
             <h2>Connect to {host.name}</h2>
             <span className="connect-host-meta">
-              {host.username}@{host.hostname}:{host.port}
+              {host.username}@{hostTarget(host)}
             </span>
           </div>
           <button className="icon-btn" onClick={onCancel}>✕</button>

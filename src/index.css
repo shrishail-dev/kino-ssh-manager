@@ -207,7 +207,7 @@ body,
   background: var(--overlay);
 }
 
-/* Color monogram tile — first initial, tinted by host.color (neutral if unset) */
+/* Color monogram tile - first initial, tinted by host.color (neutral if unset) */
 .host-avatar {
   flex-shrink: 0;
   width: 28px;
@@ -776,6 +776,82 @@ body,
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+/* ── Host form stepper ──────────────────────────────────────────── */
+.form-stepper {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 4px;
+  background: var(--bg);
+  border: 1px solid var(--muted);
+  border-radius: var(--radius);
+}
+
+.form-step {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  border-radius: calc(var(--radius) - 3px);
+  color: var(--subtext);
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.form-step:hover:not(.active) {
+  background: var(--muted);
+  color: var(--text);
+}
+
+.form-step.active {
+  background: var(--overlay);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.form-step-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--muted);
+  color: var(--subtext);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.form-step.active .form-step-num {
+  background: var(--blue);
+  color: var(--btn-primary-fg);
+}
+
+/* The scrolling pane - only the active step's fields live here. */
+.form-step-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-right: 4px;
+}
+
+/* Collapse to icons-only when the modal is narrow. */
+@media (max-width: 640px) {
+  .form-step-label {
+    display: none;
+  }
 }
 
 .form-row {
@@ -1671,7 +1747,7 @@ textarea.mono {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   Polish layer — refined depth, motion, and focus across the app.
+   Polish layer - refined depth, motion, and focus across the app.
    Appended last so it layers over the base rules above.
    ════════════════════════════════════════════════════════════════════ */
 :root {
@@ -1715,7 +1791,7 @@ body {
   background: var(--subtle);
 }
 
-/* Inputs — soft focus ring instead of a bare border swap */
+/* Inputs - soft focus ring instead of a bare border swap */
 input,
 textarea,
 select {
@@ -1731,7 +1807,7 @@ select:focus,
   box-shadow: var(--ring);
 }
 
-/* Buttons — gentle lift + depth; primary gets a soft colored glow */
+/* Buttons - gentle lift + depth; primary gets a soft colored glow */
 .btn {
   transition: background 0.14s, border-color 0.14s, transform 0.07s ease, box-shadow 0.14s, filter 0.14s;
 }
@@ -1774,7 +1850,7 @@ select:focus,
   background-image: linear-gradient(color-mix(in srgb, var(--text) 2.5%, transparent), transparent 60%);
 }
 
-/* Sidebar host rows — hairline outline on hover + crisper accent */
+/* Sidebar host rows - hairline outline on hover + crisper accent */
 .host-item {
   transition: background 0.14s, box-shadow 0.14s;
 }
@@ -1783,7 +1859,7 @@ select:focus,
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 7%, transparent);
 }
 
-/* Tabs — glowing rounded indicator instead of a flat underline */
+/* Tabs - glowing rounded indicator instead of a flat underline */
 .tab.active {
   border-bottom-color: transparent;
   position: relative;
@@ -1801,7 +1877,7 @@ select:focus,
   box-shadow: 0 0 8px color-mix(in srgb, var(--blue) 55%, transparent);
 }
 
-/* Dropdowns / popovers — unified soft elevation */
+/* Dropdowns / popovers - unified soft elevation */
 .export-dropdown,
 .settings-dropdown,
 .fwd-dropdown,
@@ -1810,7 +1886,7 @@ select:focus,
   border-color: color-mix(in srgb, var(--text) 8%, var(--muted));
 }
 
-/* Modals — backdrop blur + spring entrance */
+/* Modals - backdrop blur + spring entrance */
 .modal-overlay {
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(7px) saturate(1.05);
@@ -1825,7 +1901,7 @@ select:focus,
   animation: pop-in 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-/* Resizable modal — drag the bottom-right corner to resize */
+/* Resizable modal - drag the bottom-right corner to resize */
 .modal.modal-resizable {
   resize: both;
   overflow: auto;
@@ -1856,7 +1932,7 @@ select:focus,
   }
 }
 
-/* Unlock screen — ambient gradient stage + glassy, glowing card */
+/* Unlock screen - ambient gradient stage + glassy, glowing card */
 .unlock-screen {
   background:
     radial-gradient(1200px 600px at 50% -15%, color-mix(in srgb, var(--blue) 16%, transparent), transparent 60%),
@@ -1943,7 +2019,7 @@ select:focus,
   padding: 10px 16px;
   border-bottom: 1px solid var(--muted);
 }
-/* Read-only rows (images/volumes/networks) — no hover/click affordance. */
+/* Read-only rows (images/volumes/networks) - no hover/click affordance. */
 .docker-row-main.static { cursor: default; }
 .docker-card:has(.docker-row-main.static):hover {
   border-color: var(--muted);

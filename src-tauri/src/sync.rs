@@ -2,7 +2,7 @@
 //!
 //! Design: the vault on disk (`vault.enc`) is already an opaque AES-GCM
 //! ciphertext with its salt embedded, so syncing is just "push/pull one blob".
-//! The plaintext and master password never leave the device — the remote only
+//! The plaintext and master password never leave the device - the remote only
 //! ever sees the encrypted file. Conflict detection is delegated to the backend
 //! (for GitHub: the blob `sha` required by the Contents API; a stale sha yields
 //! a 409/422 which we surface as a conflict rather than clobbering).
@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-/// Sentinel error string meaning "remote moved under us — don't clobber".
+/// Sentinel error string meaning "remote moved under us - don't clobber".
 /// Commands translate this into a structured outcome for the frontend.
 const CONFLICT: &str = "__SYNC_CONFLICT__";
 
@@ -39,7 +39,7 @@ pub struct SyncConfig {
     /// Path of the blob within the repo, e.g. "vault.enc".
     pub path: String,
     pub branch: String,
-    /// Blob sha we last successfully synced — our optimistic-concurrency token.
+    /// Blob sha we last successfully synced - our optimistic-concurrency token.
     #[serde(default)]
     pub last_sha: Option<String>,
     /// Same, for the sibling history blob (history follows the vault).
@@ -68,7 +68,7 @@ pub fn snippets_remote_path(config: &SyncConfig) -> String {
     sibling_remote_path(config, "snippets.enc")
 }
 
-/// What the frontend may see — never includes the token itself.
+/// What the frontend may see - never includes the token itself.
 #[derive(Serialize)]
 pub struct SyncConfigView {
     pub configured: bool,
@@ -200,7 +200,7 @@ fn github_err(code: u16, resp: ureq::Response) -> String {
     match code {
         401 => "GitHub rejected the token (401). Check the token and that it has Contents read/write.".to_string(),
         403 => format!("GitHub denied access (403): {}", msg),
-        404 => format!("Repo or path not found (404): {}/{} — also returned when the token can't see a private repo.", code, msg),
+        404 => format!("Repo or path not found (404): {}/{} - also returned when the token can't see a private repo.", code, msg),
         _ => format!("GitHub error {}: {}", code, msg),
     }
 }
@@ -250,7 +250,7 @@ impl SyncBackend for GitHubBackend {
                     .ok_or_else(|| "GitHub response missing content.sha".to_string())
             }
             // 409: stale sha. 422 with no sha supplied: file already exists remotely
-            // while we thought it was new — both mean "remote moved, resolve it".
+            // while we thought it was new - both mean "remote moved, resolve it".
             Err(ureq::Error::Status(409, _)) => Err(CONFLICT.to_string()),
             Err(ureq::Error::Status(422, _)) if expected_sha.is_none() => Err(CONFLICT.to_string()),
             Err(ureq::Error::Status(code, resp)) => Err(github_err(code, resp)),
@@ -266,7 +266,7 @@ impl SyncBackend for GitHubBackend {
 pub enum PushOutcome {
     /// Uploaded successfully.
     Pushed { sha: String, synced_at: u64 },
-    /// Remote changed since our last sync — caller should pull or force.
+    /// Remote changed since our last sync - caller should pull or force.
     Conflict,
 }
 

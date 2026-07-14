@@ -183,12 +183,15 @@ interface VaultStore {
   theme: string;
   idleLockMinutes: number;
   defaultRelayUrl: string;
+  /** Feature flag - when false, all Kino Agent / relay UI is hidden. */
+  relayEnabled: boolean;
   activeForwards: Set<string>;
 
   checkVaultExists: () => Promise<boolean>;
   setTheme: (id: string) => void;
   setIdleLockMinutes: (minutes: number) => void;
   setDefaultRelayUrl: (url: string) => void;
+  setRelayEnabled: (on: boolean) => void;
   startForward: (sessionId: string, forward: PortForward, host: Host) => Promise<void>;
   stopForward: (sessionId: string, forwardId: string) => Promise<void>;
   unlock: (password: string) => Promise<void>;
@@ -206,8 +209,11 @@ interface VaultStore {
   generateSshKey: () => Promise<SshKeyPair>;
   loadKeyFile: (path: string) => Promise<string>;
   exportHost: (host: Host, path: string) => Promise<void>;
+  exportHostEncrypted: (host: Host, path: string, password: string) => Promise<void>;
   exportSshKey: (content: string, path: string) => Promise<void>;
   importHostFromFile: (path: string) => Promise<Host>;
+  profileIsEncrypted: (path: string) => Promise<boolean>;
+  importHostEncrypted: (path: string, password: string) => Promise<Host>;
   getHistory: () => Promise<HistoryEvent[]>;
   refreshSnippets: () => Promise<void>;
   saveSnippet: (snippet: Snippet) => Promise<Snippet>;
@@ -263,6 +269,20 @@ export function isAutoSyncEnabled() {
 export function setAutoSyncEnabled(on: boolean) {
   localStorage.setItem(AUTO_SYNC_KEY, on ? "1" : "0");
 }
+
+// Feature flag: Kino Agent / relay-server connection mode. Off by default (opt-in),
+// but auto-enabled on unlock if the vault already contains agent hosts - otherwise
+// an existing user's agent config would silently disappear from the UI.
+const RELAY_FLAG_KEY = "ssh-mgr:relay-enabled";
+function relayFlagWasSet() {
+  return localStorage.getItem(RELAY_FLAG_KEY) !== null;
+}
+function initialRelayEnabled() {
+  return localStorage.getItem(RELAY_FLAG_KEY) === "1";
+}
+export function hasAgentHosts(hosts: Host[]) {
+  return hosts.some((h) => h.connection_mode === "agent");
+}
 // Best-effort push after a vault change; silent on failure/conflict.
 function autoPush() {
   if (isAutoSyncEnabled()) invoke("sync_push", { force: false }).catch(() => {});
@@ -279,6 +299,7 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
   theme: localStorage.getItem("ssh-mgr:theme") ?? "catppuccin-mocha",
   idleLockMinutes: Number(localStorage.getItem("ssh-mgr:idle-lock") ?? "0"),
   defaultRelayUrl: localStorage.getItem("ssh-mgr:relay-url") ?? "",
+  relayEnabled: initialRelayEnabled(),
   activeForwards: new Set<string>(),
   recordingSessions: new Set<string>(),
   updateInfo: null,
@@ -296,6 +317,11 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
   setDefaultRelayUrl: (url) => {
     localStorage.setItem("ssh-mgr:relay-url", url);
     set({ defaultRelayUrl: url });
+  },
+
+  setRelayEnabled: (on) => {
+    localStorage.setItem(RELAY_FLAG_KEY, on ? "1" : "0");
+    set({ relayEnabled: on });
   },
 
   startForward: async (sessionId, forward, host) => {
@@ -342,10 +368,16 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
         const outcome = await invoke<PullOutcome>("sync_pull", { password });
         if (outcome.kind === "pulled") finalHosts = outcome.hosts;
       } catch {
-        /* not configured / offline — ignore */
+        /* not configured / offline - ignore */
       }
     }
     const snippets = await invoke<Snippet[]>("get_snippets").catch(() => []);
+    // If the user has never made a choice, turn the flag on when agent hosts already
+    // exist, so their config isn't hidden behind a feature they never opted into.
+    if (!relayFlagWasSet() && hasAgentHosts(finalHosts)) {
+      localStorage.setItem(RELAY_FLAG_KEY, "1");
+      set({ relayEnabled: true });
+    }
     set({ unlocked: true, hosts: finalHosts, snippets });
   },
 
@@ -435,7 +467,7 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
       const info = await invoke<UpdateInfo>("check_for_update");
       set({ updateInfo: info });
     } catch {
-      // Offline or rate-limited — fail silently, leave updateInfo as-is.
+      // Offline or rate-limited - fail silently, leave updateInfo as-is.
     }
   },
 
@@ -607,6 +639,19 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
     }).catch(console.error);
   },
 
+  exportHostEncrypted: async (host: Host, path: string, password: string) => {
+    await invoke("export_host_encrypted", { host, path, password });
+    invoke("log_history", {
+      event: {
+        id: crypto.randomUUID(),
+        timestamp: Date.now(),
+        event_type: "host_exported",
+        message: `Exported host (encrypted): ${host.name}`,
+        host_id: host.id,
+      }
+    }).catch(console.error);
+  },
+
   exportSshKey: async (content: string, path: string) => {
     await invoke("export_ssh_key", { content, path });
     invoke("log_history", {
@@ -629,6 +674,27 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
         timestamp: Date.now(),
         event_type: "host_imported",
         message: `Imported host from file: ${saved.name}`,
+        host_id: saved.id,
+      }
+    }).catch(console.error);
+
+    set((state) => ({ hosts: [...state.hosts, saved] }));
+    autoPush();
+    return saved;
+  },
+
+  profileIsEncrypted: (path: string) => invoke<boolean>("profile_is_encrypted", { path }),
+
+  importHostEncrypted: async (path: string, password: string) => {
+    const host = await invoke<Host>("import_host_encrypted", { path, password });
+    const saved = await invoke<Host>("save_host", { host });
+
+    invoke("log_history", {
+      event: {
+        id: crypto.randomUUID(),
+        timestamp: Date.now(),
+        event_type: "host_imported",
+        message: `Imported encrypted host from file: ${saved.name}`,
         host_id: saved.id,
       }
     }).catch(console.error);
@@ -722,6 +788,10 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
       },
     }).catch(console.error);
     const snippets = await invoke<Snippet[]>("get_snippets").catch(() => []);
+    if (!relayFlagWasSet() && hasAgentHosts(hosts)) {
+      localStorage.setItem(RELAY_FLAG_KEY, "1");
+      set({ relayEnabled: true });
+    }
     set({ unlocked: true, hosts, snippets });
     return hosts;
   },

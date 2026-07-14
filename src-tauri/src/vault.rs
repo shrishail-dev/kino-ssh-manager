@@ -17,7 +17,7 @@ pub struct PortForward {
     pub remote_port: u16,
 }
 
-/// Flat credential storage — password and SSH key are always independent fields.
+/// Flat credential storage - password and SSH key are always independent fields.
 /// `default_auth` is the method used when connecting without an explicit override.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Host {
@@ -214,6 +214,9 @@ mod tests {
             notes: None,
             group: None,
             os: None,
+            connection_mode: None,
+            agent_id: None,
+            relay_url: None,
         }]
     }
 
@@ -276,7 +279,7 @@ mod tests {
 
     #[test]
     fn host_deserializes_with_defaults() {
-        // Older/minimal vault entries must still load — fields added later default cleanly.
+        // Older/minimal vault entries must still load - fields added later default cleanly.
         let json = r#"{"id":"x","name":"n","hostname":"h","port":22,"username":"u","default_auth":"Password"}"#;
         let h: Host = serde_json::from_str(json).unwrap();
         assert!(h.password.is_none());

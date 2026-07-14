@@ -14,7 +14,17 @@ interface Props {
 }
 
 export function SettingsMenu({ onLock }: Props) {
-  const { theme: themeId, setTheme, idleLockMinutes, setIdleLockMinutes, updateInfo } = useVaultStore();
+  const {
+    theme: themeId,
+    setTheme,
+    idleLockMinutes,
+    setIdleLockMinutes,
+    updateInfo,
+    relayEnabled,
+    setRelayEnabled,
+    defaultRelayUrl,
+    setDefaultRelayUrl,
+  } = useVaultStore();
   const [open, setOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showRecordings, setShowRecordings] = useState(false);
@@ -64,7 +74,7 @@ export function SettingsMenu({ onLock }: Props) {
                   <polyline points="7 10 12 15 17 10" />
                   <path d="M5 21h14" />
                 </svg>
-                Update available — v{updateInfo.latest}
+                Update available - v{updateInfo.latest}
               </button>
               <div className="settings-divider" />
             </>
@@ -112,18 +122,32 @@ export function SettingsMenu({ onLock }: Props) {
           </div>
           
           <div className="settings-divider" />
-          
+
           <div className="settings-row">
-            <span>Relay Server URL</span>
-            <input 
-              type="text" 
+            <span>Kino Agent</span>
+            <select
               className="settings-select"
-              style={{ padding: "4px 8px", fontSize: "13px" }}
-              placeholder="wss://relay.kino.app" 
-              value={useVaultStore.getState().defaultRelayUrl} 
-              onChange={(e) => useVaultStore.getState().setDefaultRelayUrl(e.target.value)} 
-            />
+              value={relayEnabled ? "1" : "0"}
+              onChange={(e) => setRelayEnabled(e.target.value === "1")}
+            >
+              <option value="0">Off</option>
+              <option value="1">On</option>
+            </select>
           </div>
+
+          {relayEnabled && (
+            <div className="settings-row">
+              <span>Relay Server URL</span>
+              <input
+                type="text"
+                className="settings-select"
+                style={{ padding: "4px 8px", fontSize: "13px" }}
+                placeholder="wss://relay.kino.app"
+                value={defaultRelayUrl}
+                onChange={(e) => setDefaultRelayUrl(e.target.value)}
+              />
+            </div>
+          )}
 
           <div className="settings-divider" />
 

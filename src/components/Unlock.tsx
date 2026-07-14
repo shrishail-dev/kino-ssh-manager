@@ -136,7 +136,7 @@ export function Unlock() {
               )}
               {isNew && (
                 <p className="unlock-hint">
-                  There's no recovery if you forget this — store it safely.
+                  There's no recovery if you forget this - store it safely.
                 </p>
               )}
               {error && <p className="unlock-error">{error}</p>}

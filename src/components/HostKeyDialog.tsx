@@ -1,4 +1,5 @@
 import { Host, HostKeyVerdict } from "../store";
+import { hostTarget } from "../utils";
 
 interface Props {
   host: Host;
@@ -21,14 +22,14 @@ export function HostKeyDialog({ host, verdict, onTrust, onCancel }: Props) {
         <div className="connect-body">
           {changed ? (
             <p className="form-error" style={{ margin: 0 }}>
-              The host key for <strong>{host.hostname}:{host.port}</strong> is different from the one
-              you previously trusted. This can happen after a legitimate server rebuild — but it can
+              The host key for <strong>{hostTarget(host)}</strong> is different from the one
+              you previously trusted. This can happen after a legitimate server rebuild - but it can
               also mean someone is intercepting the connection. Only continue if you know why it
               changed.
             </p>
           ) : (
             <p className="hint" style={{ margin: 0 }}>
-              You're connecting to <strong>{host.hostname}:{host.port}</strong> for the first time.
+              You're connecting to <strong>{hostTarget(host)}</strong> for the first time.
               Confirm the server's fingerprint matches what you expect before trusting it.
             </p>
           )}

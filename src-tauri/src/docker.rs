@@ -1,10 +1,10 @@
-//! Docker management — works over the active SSH connection *or* against the
+//! Docker management - works over the active SSH connection *or* against the
 //! local Docker daemon when invoked from a local-shell tab.
 //!
 //! Commands are built as argument vectors so the two transports stay clean:
 //!   - **Remote**: the args are shell-quoted, joined onto `docker `, and exec'd
 //!     on a fresh `channel_open_session()` over the existing multiplexed SSH
-//!     `Handle` — so queries never disturb the user's live terminal.
+//!     `Handle` - so queries never disturb the user's live terminal.
 //!   - **Local**: the args are passed straight to `Command::new("docker")`, with
 //!     no shell in between (no quoting pitfalls, cross-platform).
 
@@ -26,7 +26,7 @@ type SshHandle = Arc<client::Handle<ClientHandler>>;
 /// stream_id → the running `docker logs --follow` task (aborted on stop).
 pub type LogStreams = Arc<Mutex<HashMap<String, tokio::task::JoinHandle<()>>>>;
 
-/// Quick queries (`ps`, `logs`) — fail fast if the host is unresponsive.
+/// Quick queries (`ps`, `logs`) - fail fast if the host is unresponsive.
 const QUERY_TIMEOUT: Duration = Duration::from_secs(15);
 /// Lifecycle actions honour Docker's ~10s graceful-stop window, so allow more.
 const ACTION_TIMEOUT: Duration = Duration::from_secs(60);
@@ -117,7 +117,7 @@ async fn exec_ssh(
                 Some(ChannelMsg::Data { data }) => stdout.extend_from_slice(&data),
                 Some(ChannelMsg::ExtendedData { data, .. }) => stderr.extend_from_slice(&data),
                 Some(ChannelMsg::ExitStatus { exit_status }) => code = Some(exit_status),
-                // `Eof` arrives before the channel fully closes — and the
+                // `Eof` arrives before the channel fully closes - and the
                 // `ExitStatus` message often comes *after* it, so we must keep
                 // reading until `Close`/`None` to capture the real exit code.
                 Some(ChannelMsg::Close) | None => break,
@@ -216,7 +216,7 @@ pub async fn docker_ps(
     if all {
         args.push("-a");
     }
-    // `{{json .}}` emits one JSON object per line — robust against tabs/spaces.
+    // `{{json .}}` emits one JSON object per line - robust against tabs/spaces.
     args.extend(["--no-trunc", "--format", "{{json .}}"]);
     let out = require_success(run(handle.as_ref(), &args, QUERY_TIMEOUT).await?)?;
 

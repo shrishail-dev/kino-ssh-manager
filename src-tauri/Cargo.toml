@@ -1,6 +1,6 @@
 [package]
 name = "ssh-manager"
-version = "0.4.3"
+version = "0.5.0"
 description = "Kino SSH Manager - Secure SSH credential manager"
 authors = ["Kino SSH Manager contributors"]
 license = "MIT"
@@ -33,7 +33,9 @@ tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "sync",
 russh = "0.61"
 russh-sftp = "2.3"
 log = "0.4"
-tokio-tungstenite = "0.24"
+# TLS must be compiled in or wss:// relay URLs fail with "TLS support not compiled in".
+tokio-tungstenite = { version = "0.24", features = ["rustls-tls-native-roots"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }
 futures-util = "0.3"
 
 [dev-dependencies]
@@ -43,7 +45,7 @@ tempfile = "3"
 # trip the std `ptr::copy_nonoverlapping` UB-precondition check during the SSH
 # handshake. The violations are benign on supported platforms, but the check
 # (enabled with debug-assertions) aborts the process on connect. Disable
-# debug-assertions for dependencies only — our own crate keeps them on.
+# debug-assertions for dependencies only - our own crate keeps them on.
 [profile.dev.package."*"]
 debug-assertions = false
 overflow-checks = false

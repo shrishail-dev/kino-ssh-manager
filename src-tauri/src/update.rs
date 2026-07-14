@@ -1,6 +1,6 @@
 //! Lightweight update check against the GitHub Releases API.
 //!
-//! No auto-install or signing — we just compare the latest published release
+//! No auto-install or signing - we just compare the latest published release
 //! tag to the running version and let the UI link to the release page. Done in
 //! Rust (via `ureq`) to avoid webview CORS/CSP restrictions.
 

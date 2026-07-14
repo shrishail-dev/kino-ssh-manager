@@ -355,7 +355,7 @@ fn sync_test(state: State<'_, AppState>) -> Result<bool, String> {
 }
 
 /// Push a sibling blob (history / snippets) to its remote path. These follow the
-/// vault: best-effort and auto-resolving — a conflict means overwrite, since the
+/// vault: best-effort and auto-resolving - a conflict means overwrite, since the
 /// vault we just pushed is the source of truth. Returns the new sha, or `None`
 /// when there's no local file to push.
 fn push_sibling(
@@ -431,7 +431,7 @@ fn sync_push(state: State<'_, AppState>, force: bool) -> Result<sync::PushOutcom
     };
     config.last_sha = Some(new_sha.clone());
 
-    // The history and snippet libraries follow the vault — they're encrypted with
+    // The history and snippet libraries follow the vault - they're encrypted with
     // the same key/salt, so they stay consistent with the vault we just pushed.
     config.history_sha = push_sibling(
         &config,
@@ -536,7 +536,7 @@ fn sync_pull(state: State<'_, AppState>, password: String) -> Result<sync::PullO
 /// Bootstrap a fresh machine: pull the vault straight from the cloud without an
 /// existing local vault or saved sync config. Given repo + token + the master
 /// password, it downloads the vault (and history), unlocks it, and persists the
-/// sync config — so the new device is fully set up in one step.
+/// sync config - so the new device is fully set up in one step.
 #[tauri::command]
 fn sync_restore(
     state: State<'_, AppState>,
@@ -576,7 +576,7 @@ fn sync_restore(
     let backend = sync::backend_for(&cfg)?;
     let blob = backend
         .pull()?
-        .ok_or("No vault found in that repo — push from your other device first.")?;
+        .ok_or("No vault found in that repo - push from your other device first.")?;
 
     let path = vault::vault_path();
     std::fs::create_dir_all(path.parent().unwrap()).map_err(|e| e.to_string())?;
@@ -641,6 +641,60 @@ fn sync_restore(
 fn export_host(host: vault::Host, path: String) -> Result<(), String> {
     let json = serde_json::to_string_pretty(&host).map_err(|e| e.to_string())?;
     std::fs::write(&path, json).map_err(|e| e.to_string())
+}
+
+/// Export a profile encrypted under a standalone password, independent of the vault's
+/// master password - the recipient needs only this password to import it. Same
+/// Argon2 + AES-256-GCM envelope as the vault itself, with a fresh random salt.
+#[tauri::command]
+fn export_host_encrypted(
+    host: vault::Host,
+    path: String,
+    password: String,
+) -> Result<(), String> {
+    use aes_gcm::aead::OsRng;
+    use rand_core::RngCore;
+    use zeroize::Zeroize;
+
+    if password.is_empty() {
+        return Err("Export password cannot be empty".to_string());
+    }
+
+    let mut salt = [0u8; 16];
+    OsRng.fill_bytes(&mut salt);
+    let mut key = vault::derive_key(&password, &salt)?;
+    let result = vault::save_encrypted(&std::path::PathBuf::from(&path), &host, &key, &salt);
+    key.zeroize();
+    result
+}
+
+/// True if the file at `path` is an encrypted profile envelope rather than plaintext
+/// JSON, so the UI knows whether to prompt for a password before importing.
+#[tauri::command]
+fn profile_is_encrypted(path: String) -> Result<bool, String> {
+    let bytes = std::fs::read(&path).map_err(|e| format!("Cannot read profile: {}", e))?;
+    Ok(serde_json::from_slice::<vault::EncryptedFile>(&bytes).is_ok())
+}
+
+#[tauri::command]
+fn import_host_encrypted(path: String, password: String) -> Result<vault::Host, String> {
+    use base64::{engine::general_purpose::STANDARD, Engine};
+    use zeroize::Zeroize;
+
+    let bytes = std::fs::read(&path).map_err(|e| format!("Cannot read profile: {}", e))?;
+    let enc: vault::EncryptedFile =
+        serde_json::from_slice(&bytes).map_err(|e| format!("Invalid profile file: {}", e))?;
+    let salt = STANDARD
+        .decode(&enc.salt)
+        .map_err(|e| format!("Corrupt profile: {}", e))?;
+
+    let mut key = vault::derive_key(&password, &salt)?;
+    let loaded = vault::load_encrypted::<vault::Host>(&std::path::PathBuf::from(&path), &key);
+    key.zeroize();
+
+    let mut host = loaded.map_err(|_| "Wrong password, or the profile is corrupt".to_string())?;
+    host.id = String::new(); // will get a new ID when saved
+    Ok(host)
 }
 
 #[tauri::command]
@@ -1270,6 +1324,12 @@ fn list_active_forwards(state: State<'_, AppState>) -> Vec<String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Both aws-lc-rs and ring end up in our dependency tree, so rustls 0.23 cannot
+    // pick a backend on its own - it panics on the first TLS handshake instead.
+    // Agent-mode hosts connect over wss://, so choose one explicitly up front.
+    // An error here just means a provider was already installed, which is fine.
+    let _ = rustls::crypto::ring::default_provider().install_default();
+
     let state = AppState {
         vault_key: Arc::new(Mutex::new(None)),
         vault_salt: Arc::new(Mutex::new(None)),
@@ -1301,10 +1361,13 @@ pub fn run() {
             trust_host_key,
             forget_host_key,
             export_host,
+            export_host_encrypted,
             export_ssh_key,
             read_key_file,
             save_session_log,
             import_host,
+            profile_is_encrypted,
+            import_host_encrypted,
             ssh_connect,
             ssh_write,
             ssh_resize,
@@ -1358,4 +1421,80 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod export_tests {
+    use super::*;
+
+    fn sample_host() -> vault::Host {
+        vault::Host {
+            id: "abc".into(),
+            name: "web".into(),
+            hostname: "10.0.0.1".into(),
+            port: 22,
+            username: "root".into(),
+            default_auth: "Password".into(),
+            password: Some("hunter2".into()),
+            private_key: Some("TOP-SECRET-KEY".into()),
+            public_key: None,
+            passphrase: None,
+            port_forwards: vec![],
+            on_connect_snippets: vec![],
+            color: None,
+            notes: None,
+            group: None,
+            os: None,
+            connection_mode: None,
+            agent_id: None,
+            relay_url: None,
+        }
+    }
+
+    #[test]
+    fn encrypted_export_roundtrips_and_leaks_no_secrets() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("profile.sshm");
+        let p = path.to_string_lossy().to_string();
+
+        export_host_encrypted(sample_host(), p.clone(), "s3cret".into()).unwrap();
+
+        // The whole point: secrets must not survive as plaintext on disk.
+        let raw = std::fs::read_to_string(&path).unwrap();
+        assert!(!raw.contains("hunter2"), "password leaked into the export");
+        assert!(!raw.contains("TOP-SECRET-KEY"), "private key leaked into the export");
+
+        assert!(profile_is_encrypted(p.clone()).unwrap());
+
+        let imported = import_host_encrypted(p, "s3cret".into()).unwrap();
+        assert_eq!(imported.name, "web");
+        assert_eq!(imported.password.as_deref(), Some("hunter2"));
+        assert_eq!(imported.private_key.as_deref(), Some("TOP-SECRET-KEY"));
+        assert!(imported.id.is_empty(), "imported host must get a fresh id");
+    }
+
+    #[test]
+    fn wrong_password_is_rejected() {
+        let dir = tempfile::tempdir().unwrap();
+        let p = dir.path().join("profile.sshm").to_string_lossy().to_string();
+        export_host_encrypted(sample_host(), p.clone(), "right".into()).unwrap();
+        assert!(import_host_encrypted(p, "wrong".into()).is_err());
+    }
+
+    #[test]
+    fn empty_export_password_is_rejected() {
+        let dir = tempfile::tempdir().unwrap();
+        let p = dir.path().join("profile.sshm").to_string_lossy().to_string();
+        assert!(export_host_encrypted(sample_host(), p, String::new()).is_err());
+    }
+
+    #[test]
+    fn plaintext_export_is_not_flagged_as_encrypted() {
+        let dir = tempfile::tempdir().unwrap();
+        let p = dir.path().join("profile.sshm").to_string_lossy().to_string();
+        export_host(sample_host(), p.clone()).unwrap();
+        assert!(!profile_is_encrypted(p.clone()).unwrap());
+        // The plaintext importer must still accept legacy/unencrypted profiles.
+        assert_eq!(import_host(p).unwrap().name, "web");
+    }
 }

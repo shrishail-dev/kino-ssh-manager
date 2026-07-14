@@ -1,4 +1,4 @@
-//! Live system metrics — CPU / memory / network / load / uptime / disk.
+//! Live system metrics - CPU / memory / network / load / uptime / disk.
 //!
 //! A background task samples the target once a second and emits a
 //! `metrics-<streamId>` event. Remote samples run a single cheap `/proc`-based

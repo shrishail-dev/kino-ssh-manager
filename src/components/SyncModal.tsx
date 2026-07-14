@@ -71,7 +71,7 @@ export function SyncModal({ onClose }: Props) {
         kind: "ok",
         msg: exists
           ? "Connected. A vault already exists in this repo."
-          : "Connected. No vault pushed yet — use Push to create it.",
+          : "Connected. No vault pushed yet - use Push to create it.",
       });
     } catch (e) {
       setStatus({ kind: "error", msg: String(e) });
@@ -105,7 +105,7 @@ export function SyncModal({ onClose }: Props) {
       setPullPassword("");
       setShowPullPrompt(false);
       if (outcome.kind === "no_remote") {
-        setStatus({ kind: "error", msg: "Nothing in the cloud yet — push first." });
+        setStatus({ kind: "error", msg: "Nothing in the cloud yet - push first." });
       } else if (outcome.kind === "up_to_date") {
         setStatus({ kind: "ok", msg: "Already up to date." });
       } else {
@@ -160,7 +160,7 @@ export function SyncModal({ onClose }: Props) {
             <label>
               Personal access token{" "}
               <span className="hint-inline">
-                {hasToken ? "(saved — leave blank to keep)" : "(fine-grained, Contents: read & write)"}
+                {hasToken ? "(saved - leave blank to keep)" : "(fine-grained, Contents: read & write)"}
               </span>
             </label>
             <input

@@ -4,10 +4,52 @@ All notable changes to Kino SSH Manager are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.5.0] - 2026-07-14
+
+### Added
+- **Agent connection mode** - reach hosts that expose **no inbound SSH port** -
+  behind NAT, CGNAT, or a firewall - through a relay, instead of connecting to a
+  hostname directly:
+  - The host editor gains a **Kino Agent** connection mode. Instead of a hostname
+    and port, you provide a **relay URL** (`wss://...`) and an **agent id**.
+  - A companion [kino-agent](https://github.com/Samarthegde/kino-agent) runs on
+    the target machine and dials *out* to a [kino-relay](https://github.com/Samarthegde/kino-relay);
+    the manager reaches it through that relay. The host editor shows the exact
+    command to run on the target.
+  - The SSH session stays end-to-end encrypted - the relay only forwards bytes
+    and never sees your credentials.
+  - **Off by default.** Enable it under **Settings → Kino Agent**; when off, all
+    agent/relay UI is hidden. It auto-enables if your vault already contains
+    agent hosts, so existing configuration is never hidden.
+  - A default relay URL can be set in Settings and is pre-filled for new hosts.
+- **Password-encrypted profile export** - exporting a host profile now offers a
+  password-encrypted `.sshm` file (Argon2 + AES-256-GCM), protected by a
+  standalone password you share out-of-band, with a built-in password generator.
+  Importing an encrypted profile prompts for the password. Plain (unencrypted)
+  export is still available and clearly marked.
+
+### Changed
+- **Host editor redesigned as a stepper** - the long Add/Edit Host form is now
+  organized into steps (**Connection & Auth**, **Port Forwards**, **Advanced**)
+  that double as clickable tabs, so you can jump straight to a field when editing
+  without scrolling. Save is available on every step.
+
+### Fixed
+- **`wss://` relay URLs now work.** TLS is compiled into the WebSocket client
+  (rustls), fixing a `TLS support not compiled in` failure when connecting to a
+  `wss://` relay.
+- **Host-key verification for agent hosts.** Agent hosts have no hostname, so they
+  were all keyed as `:22` in the known-hosts store - trusting one overwrote
+  another and later raised a false "possible man-in-the-middle" mismatch. They are
+  now keyed by agent id, so each agent's SSH fingerprint is tracked independently.
+- **Agent hosts no longer display as `user@:22`** in the sidebar, connect dialog,
+  and host-key prompt; they show `user@agent <id>` instead, and are searchable by
+  agent id.
+
 ## [0.4.3] - 2026-06-30
 
 ### Added
-- **Session recording & replay** — capture any SSH or local-shell session to an
+- **Session recording & replay** - capture any SSH or local-shell session to an
   [asciicast](https://docs.asciinema.org/) (`.cast`) file:
   - A **Record / Stop** toggle in the terminal toolbar starts and stops capture
     for the active session, with a live "recording" indicator.
@@ -15,7 +57,7 @@ on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
   - A **Recordings** manager (Settings → Recordings) lists every recording with
     its date and size, and plays them back in an embedded asciinema player or
     deletes them.
-- **Remote file editor** — open a text file from the SFTP browser to edit it in
+- **Remote file editor** - open a text file from the SFTP browser to edit it in
   a built-in Monaco (VS Code) editor and save it straight back over SFTP, with
   no download/re-upload round trip. Syntax highlighting is picked from the file
   extension and the editor follows the app's active theme.
@@ -23,10 +65,10 @@ on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 ## [0.4.2] - 2026-06-29
 
 ### Changed
-- **Full-screen Docker panel** — the Docker management modal now opens maximized,
+- **Full-screen Docker panel** - the Docker management modal now opens maximized,
   so the containers / images / volumes / networks lists use the full window
   height instead of a fixed-height box.
-- **Full-screen log viewer** — clicking a container's logs now opens a dedicated
+- **Full-screen log viewer** - clicking a container's logs now opens a dedicated
   full-screen modal with larger, more readable text, layered above the Docker
   panel, instead of the small panel that was docked at the bottom. Live
   streaming, auto-scroll, and copy-to-clipboard are unchanged. Closing it (✕ or
@@ -39,34 +81,34 @@ on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 ## [0.4.1] - 2026-06-10
 
 ### Added
-- **Copy Docker logs** — a one-click button in the container log viewer copies
+- **Copy Docker logs** - a one-click button in the container log viewer copies
   the current log buffer to the clipboard.
 
 ## [0.4.0] - 2026-06-10
 
 ### Added
-- **Docker management** — a per-session panel to manage Docker over the existing
+- **Docker management** - a per-session panel to manage Docker over the existing
   SSH connection (or the local daemon from a local-shell tab):
   - Containers: start / stop / restart / pause / remove, with live status.
-  - **Shell access** — drop into an interactive shell inside any running
+  - **Shell access** - drop into an interactive shell inside any running
     container (`docker exec`, prefers `bash`, falls back to `sh`) as a new
     terminal tab.
-  - **Live log streaming** — follow a container's logs in real time.
+  - **Live log streaming** - follow a container's logs in real time.
   - **Images / Volumes / Networks** tabs for browsing the daemon.
-- **Live system metrics** — a streaming dashboard (CPU, memory, disk, load
+- **Live system metrics** - a streaming dashboard (CPU, memory, disk, load
   average, uptime, network throughput) sampled once a second, for remote hosts
   and the local machine.
 - **Remote (reverse) port forwarding** (`ssh -R`) and a **dynamic SOCKS5 proxy**
   (`ssh -D`), alongside the existing local forwards. Pick the tunnel type per
   rule in the host editor.
-- **Operating-system tags** — choose a host's OS in the editor; the sidebar
+- **Operating-system tags** - choose a host's OS in the editor; the sidebar
   shows a matching OS icon (Linux, Ubuntu, Debian, Fedora, Arch, Alpine,
   Windows, macOS) tinted with the host color.
-- **Collapsible, resizable sidebar** — hide it from the header toggle or drag
+- **Collapsible, resizable sidebar** - hide it from the header toggle or drag
   its edge to resize; the width and collapsed state persist.
 
 ### Changed
-- **Async networking backend** — the SSH/SFTP/forwarding stack was rewritten
+- **Async networking backend** - the SSH/SFTP/forwarding stack was rewritten
   from the synchronous `ssh2` (libssh2) to the asynchronous `russh` (Tokio).
   A single connection is now multiplexed, so Docker queries, metrics, SFTP, and
   port forwards run in the background without lagging or dropping the terminal.
@@ -86,12 +128,12 @@ on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 ## [0.3.0] - 2026-06-09
 
 ### Added
-- **Folders / Groups** — dynamically organize hosts in the sidebar using tag-based groups.
-- **Quick Connect Bar** — instantly connect to any transient host directly from the sidebar by typing `user@host:port` without cluttering the vault.
-- **Local Shell Tabs** — open a local PowerShell (Windows) or Bash/Zsh (Unix) terminal right inside the app, alongside your remote SSH tabs.
+- **Folders / Groups** - dynamically organize hosts in the sidebar using tag-based groups.
+- **Quick Connect Bar** - instantly connect to any transient host directly from the sidebar by typing `user@host:port` without cluttering the vault.
+- **Local Shell Tabs** - open a local PowerShell (Windows) or Bash/Zsh (Unix) terminal right inside the app, alongside your remote SSH tabs.
 
 ### Fixed
-- **Windows SSH authentication (Error 19)** — libssh2 could fail to parse keys with `\r\n` line endings on Windows. Private and public keys are now normalized to use `\n` line endings internally before being sent to the authentication backend.
+- **Windows SSH authentication (Error 19)** - libssh2 could fail to parse keys with `\r\n` line endings on Windows. Private and public keys are now normalized to use `\n` line endings internally before being sent to the authentication backend.
 
 ### Compatibility
 - The `group` field for Folders is fully backward compatible; existing vaults will load seamlessly without it.
@@ -99,12 +141,12 @@ on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 ## [0.2.0] - 2026-06-04
 
 ### Added
-- **Per-host notes** — store free-form notes on any connection. Notes are
+- **Per-host notes** - store free-form notes on any connection. Notes are
   searchable from the sidebar and shown via a note indicator and row tooltip.
 - **Master password confirmation** on first-time vault creation, with a
   "no recovery if you forget this" reminder.
 - **Show/hide password toggle** on the unlock screen.
-- **Resizable host editor** — drag the bottom-right corner of the Add/Edit Host
+- **Resizable host editor** - drag the bottom-right corner of the Add/Edit Host
   dialog.
 - **Windows installers** (`.msi` / `.exe`) are now built and published alongside
   the Linux packages.
@@ -112,13 +154,13 @@ on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 ### Changed
 - Refreshed UI: softer shapes, focus rings, button depth, animated modals, and a
   glassier unlock screen.
-- Modals no longer close when clicking outside — only via the ✕ or Cancel/Done
+- Modals no longer close when clicking outside - only via the ✕ or Cancel/Done
   buttons, to prevent accidental dismissal.
 
 ### Fixed
 - The auto-lock dropdown now follows the selected theme instead of using the OS
   default colors.
-- **SSH key authentication on Windows** — ed25519/OpenSSH keys failed to
+- **SSH key authentication on Windows** - ed25519/OpenSSH keys failed to
   authenticate on the Windows build because libssh2 could not derive the public
   key from the in-memory private key. The public key is now supplied (stored, or
   derived in Rust) so key-based auth works across platforms.

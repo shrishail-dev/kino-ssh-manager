@@ -15,14 +15,14 @@ export const OS_OPTIONS: { value: string; label: string }[] = [
 
 // Monochrome icons drawn with currentColor so they tint with the host color.
 const PATHS: Record<string, ReactNode> = {
-  // Tux — simple penguin silhouette.
+  // Tux - simple penguin silhouette.
   linux: (
     <path
       fill="currentColor"
       d="M12 2c-1.9 0-3.1 1.6-3.1 3.6 0 .8.2 1.5.2 2.2 0 1-1.4 2.4-2.3 4.5-.8 1.9-1.3 3.3-2.1 4.4-.5.7-1.4 1.1-1.4 1.9 0 .6.6.9 1.3.7.5-.1.9-.5 1.1-.5.2 0 .2.3.2.7 0 .5.3.8 1 .8h8.2c.7 0 1-.3 1-.8 0-.4 0-.7.2-.7.2 0 .6.4 1.1.5.7.2 1.3-.1 1.3-.7 0-.8-.9-1.2-1.4-1.9-.8-1.1-1.3-2.5-2.1-4.4-.9-2.1-2.3-3.5-2.3-4.5 0-.7.2-1.4.2-2.2C15.1 3.6 13.9 2 12 2zm-1.4 4.1c.4 0 .7.4.7.9s-.3.9-.7.9-.7-.4-.7-.9.3-.9.7-.9zm2.8 0c.4 0 .7.4.7.9s-.3.9-.7.9-.7-.4-.7-.9.3-.9.7-.9zM12 8.7c.7 0 1.6.5 1.6 1 0 .3-.4.5-.8.7-.3.2-.6.5-.8.5s-.5-.3-.8-.5c-.4-.2-.8-.4-.8-.7 0-.5.9-1 1.4-1z"
     />
   ),
-  // Ubuntu — circle of friends.
+  // Ubuntu - circle of friends.
   ubuntu: (
     <>
       <circle cx="12" cy="12" r="8.2" fill="none" stroke="currentColor" strokeWidth="1.5" />
@@ -32,7 +32,7 @@ const PATHS: Record<string, ReactNode> = {
       <circle cx="12" cy="12" r="2.1" fill="currentColor" />
     </>
   ),
-  // Debian — simplified swirl.
+  // Debian - simplified swirl.
   debian: (
     <path
       fill="none"
@@ -42,7 +42,7 @@ const PATHS: Record<string, ReactNode> = {
       d="M15 5.2C10.6 4.2 6.5 7 5.6 11.4c-.8 3.9 1.6 7.7 5.5 8.6 3.2.7 6-1 6.6-3.8.5-2.4-.9-4.7-3.3-5.2-1.9-.4-3.6.7-4 2.4"
     />
   ),
-  // Fedora — "f" inside a circle.
+  // Fedora - "f" inside a circle.
   fedora: (
     <>
       <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.5" />
@@ -55,14 +55,14 @@ const PATHS: Record<string, ReactNode> = {
       />
     </>
   ),
-  // Arch — stylized mountain "A".
+  // Arch - stylized mountain "A".
   arch: (
     <path
       fill="currentColor"
       d="M12 2.5 4 19.5c1.9-1 3.3-1.9 4.2-3L12 8.6l3.8 7.9c.9 1.1 2.3 2 4.2 3L12 2.5z"
     />
   ),
-  // Alpine — mountain peaks.
+  // Alpine - mountain peaks.
   alpine: (
     <path
       fill="none"
@@ -72,14 +72,14 @@ const PATHS: Record<string, ReactNode> = {
       d="M3 18.5 9 8l3.4 5.6L14.5 10l6.5 8.5z"
     />
   ),
-  // Windows — four panes.
+  // Windows - four panes.
   windows: (
     <path
       fill="currentColor"
       d="M3 5.6 10.6 4.5v7H3V5.6zm8.6-1.2L21 3v8.5h-9.4V4.4zM3 12.6h7.6v7L3 18.4v-5.8zm8.6 0H21V21l-9.4-1.3v-7.1z"
     />
   ),
-  // macOS — apple silhouette with leaf.
+  // macOS - apple silhouette with leaf.
   macos: (
     <>
       <path
@@ -92,7 +92,7 @@ const PATHS: Record<string, ReactNode> = {
       />
     </>
   ),
-  // Generic — server stack.
+  // Generic - server stack.
   other: (
     <>
       <rect x="4" y="4.5" width="16" height="6.5" rx="1.4" fill="none" stroke="currentColor" strokeWidth="1.5" />

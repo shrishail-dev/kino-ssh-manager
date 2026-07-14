@@ -13,17 +13,17 @@ npm run tauri dev
 
 ## Project layout
 
-- `src-tauri/src/` — Rust backend
-  - `vault.rs` — `Host` struct + vault encryption (Argon2 + AES-256-GCM)
-  - `lib.rs` — app state and all Tauri command handlers
-  - `ssh_session.rs` — interactive terminal sessions
-  - `forwarding.rs` — port-forward tunnels
-  - `sftp_session.rs` — SFTP sessions (browse/transfer/manage)
-  - `sync.rs` — encrypted-blob cloud sync (pluggable `SyncBackend`, GitHub impl)
+- `src-tauri/src/` - Rust backend
+  - `vault.rs` - `Host` struct + vault encryption (Argon2 + AES-256-GCM)
+  - `lib.rs` - app state and all Tauri command handlers
+  - `ssh_session.rs` - interactive terminal sessions
+  - `forwarding.rs` - port-forward tunnels
+  - `sftp_session.rs` - SFTP sessions (browse/transfer/manage)
+  - `sync.rs` - encrypted-blob cloud sync (pluggable `SyncBackend`, GitHub impl)
   - `snippets.rs`, `history.rs`, `keygen.rs`
-- `src/` — React + TypeScript frontend
-  - `store/index.ts` — Zustand store (state + IPC calls)
-  - `components/` — UI
+- `src/` - React + TypeScript frontend
+  - `store/index.ts` - Zustand store (state + IPC calls)
+  - `components/` - UI
 
 ## Before you open a PR
 
@@ -49,7 +49,7 @@ cargo fmt --manifest-path src-tauri/Cargo.toml
 
 ## Reporting security issues
 
-Do **not** file public issues for vulnerabilities — see [SECURITY.md](SECURITY.md).
+Do **not** file public issues for vulnerabilities - see [SECURITY.md](SECURITY.md).
 
 ## License
 

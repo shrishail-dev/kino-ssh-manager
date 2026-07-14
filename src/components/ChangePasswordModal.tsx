@@ -53,7 +53,7 @@ export function ChangePasswordModal({ onClose }: Props) {
             <>
               <p className="hint" style={{ marginTop: 0 }}>
                 Re-encrypts the entire vault under a new password. There's no recovery if you forget
-                it — store it safely.
+                it - store it safely.
               </p>
               <div className="form-row">
                 <label>Current password</label>

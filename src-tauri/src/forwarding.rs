@@ -1,4 +1,4 @@
-//! Port forwarding over the SSH connection — three flavours, all multiplexed on
+//! Port forwarding over the SSH connection - three flavours, all multiplexed on
 //! the existing `russh` handle:
 //!   - **local**  (`ssh -L`): bind a local port, tunnel each connection to a
 //!     remote `host:port` via `channel_open_direct_tcpip`.

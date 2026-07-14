@@ -29,7 +29,7 @@ Use GitHub's private vulnerability reporting: go to the repository's **Security*
 ## What this does NOT protect against
 
 - **A compromised local machine.** While the vault is unlocked, the derived key and decrypted secrets exist in process memory. Malware running as your user, or with debugger access to the process, can read them.
-- **A weak master password.** Argon2 slows brute force but cannot rescue a trivially guessable password. Use a strong, unique one — there is no recovery if you forget it.
+- **A weak master password.** Argon2 slows brute force but cannot rescue a trivially guessable password. Use a strong, unique one - there is no recovery if you forget it.
 - **The remote hosts you connect to.** Once you connect, the remote server can see whatever you type/transfer.
 
 ## Host key verification
@@ -38,8 +38,8 @@ Connections verify the server's host key on a trust-on-first-use (TOFU) basis:
 
 - On first contact the app shows the server's **SHA256 fingerprint** and asks you to confirm it before connecting. Verify it out-of-band (e.g. `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` on the server) when you can.
 - Accepted fingerprints are stored in `known_hosts.json` (keyed by `host:port`).
-- If a server later presents a **different** key, the connection is **refused** with a mismatch warning — this is the man-in-the-middle protection. After a legitimate server rebuild you can re-trust the new key from the dialog.
-- Verification is enforced in the backend before any credentials are sent, including for port forwards and SFTP — not just in the UI.
+- If a server later presents a **different** key, the connection is **refused** with a mismatch warning - this is the man-in-the-middle protection. After a legitimate server rebuild you can re-trust the new key from the dialog.
+- Verification is enforced in the backend before any credentials are sent, including for port forwards and SFTP - not just in the UI.
 
 ## Supported versions
 

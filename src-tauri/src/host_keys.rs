@@ -1,7 +1,8 @@
 //! Host key verification (trust-on-first-use) using russh.
 //!
 //! We store SHA256 fingerprints of accepted host keys in `known_hosts.json`
-//! (keyed by `host:port`). Fingerprints aren't secret, so this file is plain
+//! (keyed by `host:port`, or `agent:<agent_id>` for relay-reached hosts - see
+//! [`key_for`]). Fingerprints aren't secret, so this file is plain
 //! JSON, mirroring how OpenSSH's known_hosts is plaintext. On connect we compare
 //! the server's presented key against the stored fingerprint:
 //!   - match    → proceed
@@ -21,7 +22,19 @@ fn store_path() -> PathBuf {
     vault_path().parent().unwrap().join("known_hosts.json")
 }
 
+/// Identity under which a host's fingerprint is stored.
+///
+/// Agent-mode hosts have no hostname - they're reached by agent id through a relay.
+/// Keying them as "hostname:port" would collapse every one of them onto ":22", so
+/// they'd share a single known-hosts entry: trusting one would overwrite another,
+/// and the next connection would look like a host-key mismatch. Key them by agent
+/// id instead, which is what actually identifies the far end.
 pub(crate) fn key_for(host: &Host) -> String {
+    if host.connection_mode.as_deref() == Some("agent") {
+        if let Some(agent_id) = host.agent_id.as_deref().filter(|id| !id.is_empty()) {
+            return format!("agent:{agent_id}");
+        }
+    }
     format!("{}:{}", host.hostname, host.port)
 }
 
@@ -92,7 +105,7 @@ async fn fetch_fingerprint(host: &Host) -> Result<String, String> {
 pub enum HostKeyVerdict {
     /// Presented key matches the stored fingerprint.
     Trusted,
-    /// No fingerprint stored yet — first contact.
+    /// No fingerprint stored yet - first contact.
     New { fingerprint: String },
     /// Stored fingerprint differs from what the server presented.
     Changed { fingerprint: String, known: String },
@@ -125,7 +138,7 @@ pub fn enforce(host: &Host, presented_fingerprint: &str) -> Result<(), String> {
     match map.get(&key_for(host)) {
         Some(known) if known == presented_fingerprint => Ok(()),
         Some(_) => Err(format!(
-            "HOST KEY MISMATCH for {} — the server's key differs from the trusted one. \
+            "HOST KEY MISMATCH for {} - the server's key differs from the trusted one. \
              Possible man-in-the-middle; connection refused.",
             key_for(host)
         )),
@@ -133,5 +146,68 @@ pub fn enforce(host: &Host, presented_fingerprint: &str) -> Result<(), String> {
             "Host key for {} has not been verified. Connect from the host list to review and trust it.",
             key_for(host)
         )),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn host(hostname: &str, mode: Option<&str>, agent_id: Option<&str>) -> Host {
+        Host {
+            id: "x".into(),
+            name: "h".into(),
+            hostname: hostname.into(),
+            port: 22,
+            username: "root".into(),
+            default_auth: "Password".into(),
+            password: None,
+            private_key: None,
+            public_key: None,
+            passphrase: None,
+            port_forwards: vec![],
+            on_connect_snippets: vec![],
+            color: None,
+            notes: None,
+            group: None,
+            os: None,
+            connection_mode: mode.map(Into::into),
+            agent_id: agent_id.map(Into::into),
+            relay_url: None,
+        }
+    }
+
+    #[test]
+    fn direct_hosts_key_on_hostname_and_port() {
+        assert_eq!(key_for(&host("10.0.0.1", None, None)), "10.0.0.1:22");
+        assert_eq!(key_for(&host("10.0.0.1", Some("direct"), None)), "10.0.0.1:22");
+    }
+
+    #[test]
+    fn agent_hosts_key_on_agent_id_not_empty_hostname() {
+        // Agent hosts carry no hostname; keying on it would yield ":22" for all of
+        // them. Two distinct agents must never share a known-hosts entry.
+        let a = host("", Some("agent"), Some("agent-aaa"));
+        let b = host("", Some("agent"), Some("agent-bbb"));
+        assert_eq!(key_for(&a), "agent:agent-aaa");
+        assert_ne!(key_for(&a), key_for(&b), "distinct agents must not collide");
+    }
+
+    #[test]
+    fn trusting_one_agent_does_not_make_another_look_like_a_mitm() {
+        let a = host("", Some("agent"), Some("agent-aaa"));
+        let b = host("", Some("agent"), Some("agent-bbb"));
+        let mut map: HashMap<String, String> = HashMap::new();
+        map.insert(key_for(&a), "fp-a".into());
+
+        // B is simply unknown (first contact) - not a mismatch against A's key.
+        assert!(matches!(
+            classify(map.get(&key_for(&b)).map(|s| s.as_str()), "fp-b"),
+            HostKeyVerdict::New { .. }
+        ));
+        assert!(matches!(
+            classify(map.get(&key_for(&a)).map(|s| s.as_str()), "fp-a"),
+            HostKeyVerdict::Trusted
+        ));
     }
 }

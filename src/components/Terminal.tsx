@@ -46,7 +46,7 @@ export function Terminal({ sessionId, kind, active }: Props) {
 
     const fitAddon = new FitAddon();
     const searchAddon = new SearchAddon();
-    // Route link clicks through Tauri's opener — the webview blocks window.open().
+    // Route link clicks through Tauri's opener - the webview blocks window.open().
     const webLinksAddon = new WebLinksAddon((_event, uri) => {
       openUrl(uri).catch((e) => console.error("Failed to open link:", e));
     });
@@ -67,7 +67,7 @@ export function Terminal({ sessionId, kind, active }: Props) {
     const dataEvent = kind === "local" ? `local-data-${sessionId}` : `ssh-data-${sessionId}`;
     const closeEvent = kind === "local" ? `local-closed-${sessionId}` : `ssh-closed-${sessionId}`;
 
-    // Ctrl+F search, Ctrl +/-/0 font size — intercepted before the shell sees them.
+    // Ctrl+F search, Ctrl +/-/0 font size - intercepted before the shell sees them.
     const applyFont = (size: number) => {
       const s = Math.min(28, Math.max(8, size));
       term.options.fontSize = s;

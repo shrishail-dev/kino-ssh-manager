@@ -64,7 +64,7 @@ export function ForwardingPanel({ sessionId, host }: Props) {
 
       {open && (
         <div className="fwd-dropdown">
-          <p className="fwd-dropdown-title">Port Forwards — {host.name}</p>
+          <p className="fwd-dropdown-title">Port Forwards - {host.name}</p>
           {err && <p className="fwd-error">{err}</p>}
           {forwards.map((fwd) => {
             const isActive = activeForwards.has(`${sessionId}:${fwd.id}`);

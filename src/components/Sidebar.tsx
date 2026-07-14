@@ -1,16 +1,20 @@
 import { useState, useEffect } from "react";
 import { Host, HostKeyVerdict, useVaultStore } from "../store";
 import { ConnectDialog, getSavedAuthPref } from "./ConnectDialog";
-import { ExportMenu, promptImportHost } from "./ExportMenu";
+import { ExportMenu, pickProfileFile } from "./ExportMenu";
 import { HostForm } from "./HostForm";
 import { HostKeyDialog } from "./HostKeyDialog";
+import { ImportPasswordModal } from "./ImportPasswordModal";
 import { OsIcon } from "./OsIcon";
+import { hostTarget } from "../utils";
 
 type HostKeyPrompt = { host: Host; verdict: Extract<HostKeyVerdict, { status: "new" | "changed" }> };
 
 export function Sidebar({ width }: { width: number }) {
-  const { hosts, connectToHost, deleteHost, importHostFromFile, verifyHostKey, trustHostKey, getHistory, openLocalShell } =
+  const { hosts, connectToHost, deleteHost, importHostFromFile, profileIsEncrypted, verifyHostKey, trustHostKey, getHistory, openLocalShell } =
     useVaultStore();
+  /** Path of an encrypted profile waiting on its password. */
+  const [encryptedImport, setEncryptedImport] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editHost, setEditHost] = useState<Host | undefined>();
   const [connecting, setConnecting] = useState<string | null>(null);
@@ -41,7 +45,7 @@ export function Sidebar({ width }: { width: number }) {
   const q = query.trim().toLowerCase();
   const visibleHosts = (q
     ? hosts.filter((h) =>
-      [h.name, h.hostname, h.username, h.notes ?? ""].some((f) =>
+      [h.name, h.hostname, h.username, h.notes ?? "", h.agent_id ?? ""].some((f) =>
         f.toLowerCase().includes(q)
       )
     )
@@ -107,7 +111,7 @@ export function Sidebar({ width }: { width: number }) {
     setQuickConnectInput("");
   }
 
-  // Actually open the session — assumes the host key is already trusted.
+  // Actually open the session - assumes the host key is already trusted.
   async function establish(host: Host) {
     setConnecting(host.id);
     try {
@@ -180,7 +184,14 @@ export function Sidebar({ width }: { width: number }) {
   async function handleImport() {
     setImporting(true);
     try {
-      await promptImportHost(importHostFromFile);
+      const path = await pickProfileFile();
+      if (!path) return;
+      // Encrypted profiles need a password, which the modal collects before importing.
+      if (await profileIsEncrypted(path)) {
+        setEncryptedImport(path);
+        return;
+      }
+      await importHostFromFile(path);
     } catch (e) {
       alert(`Import failed: ${e}`);
     } finally {
@@ -299,7 +310,7 @@ export function Sidebar({ width }: { width: number }) {
                         )}
                       </span>
                       <span className="host-meta">
-                        {host.username}@{host.hostname}:{host.port}
+                        {host.username}@{hostTarget(host)}
                       </span>
                       <span className={`auth-badge ${authClass(host)}`}>
                         {authLabel(host)}
@@ -391,6 +402,14 @@ export function Sidebar({ width }: { width: number }) {
         <HostForm
           host={editHost}
           onClose={() => { setShowForm(false); setEditHost(undefined); }}
+        />
+      )}
+
+      {encryptedImport && (
+        <ImportPasswordModal
+          path={encryptedImport}
+          onClose={() => setEncryptedImport(null)}
+          onImported={() => setEncryptedImport(null)}
         />
       )}
     </>

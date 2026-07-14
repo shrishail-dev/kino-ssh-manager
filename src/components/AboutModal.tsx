@@ -52,7 +52,7 @@ export function AboutModal({ onClose }: Props) {
 
           {updateInfo?.available ? (
             <div className="about-update available">
-              <span>Update available — v{updateInfo.latest}</span>
+              <span>Update available - v{updateInfo.latest}</span>
               <button className="btn btn-sm btn-primary" onClick={() => openUrl(updateInfo.url).catch(() => {})}>
                 Download
               </button>

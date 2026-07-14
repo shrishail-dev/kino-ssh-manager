@@ -255,7 +255,7 @@ export function SftpModal({ sessionId, host, onClose }: Props) {
     <div className="modal-overlay">
       <div className="modal" style={{ width: 700, maxHeight: "82vh", display: "flex", flexDirection: "column" }}>
         <div className="modal-header">
-          <h2>Files — {host.name}</h2>
+          <h2>Files - {host.name}</h2>
           <button className="icon-btn" onClick={handleClose}>✕</button>
         </div>
 

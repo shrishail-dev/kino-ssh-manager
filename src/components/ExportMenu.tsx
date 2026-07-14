@@ -1,14 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { save, open as openDialog } from "@tauri-apps/plugin-dialog";
-import { Host, useVaultStore } from "../store";
+import { useVaultStore } from "../store";
+import { ExportProfileModal } from "./ExportProfileModal";
+import { slug } from "../utils";
+import type { Host } from "../store";
 
 interface Props {
   host: Host;
 }
 
 export function ExportMenu({ host }: Props) {
-  const { exportHost, exportSshKey } = useVaultStore();
+  const { exportSshKey } = useVaultStore();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const [status, setStatus] = useState("");
   const ref = useRef<HTMLDivElement>(null);
 
@@ -27,16 +31,11 @@ export function ExportMenu({ host }: Props) {
     setTimeout(() => setStatus(""), 2000);
   }
 
-  async function handleExportProfile() {
+  function handleExportProfile() {
+    // The profile carries the host's password and private key, so the encryption
+    // choice happens in a dedicated dialog rather than dumping straight to disk.
     setMenuOpen(false);
-    const path = await save({
-      title: "Export Host Profile",
-      defaultPath: `${slug(host.name)}.sshm`,
-      filters: [{ name: "Kino SSH Manager Profile", extensions: ["sshm"] }],
-    });
-    if (!path) return;
-    await exportHost(host, path as string);
-    flash("Profile exported");
+    setShowExport(true);
   }
 
   async function handleExportPrivKey() {
@@ -130,23 +129,25 @@ export function ExportMenu({ host }: Props) {
           )}
         </div>
       )}
+
+      {showExport && (
+        <ExportProfileModal
+          host={host}
+          onClose={() => setShowExport(false)}
+          onExported={flash}
+        />
+      )}
     </div>
   );
 }
 
-export async function promptImportHost(
-  importHostFromFile: (path: string) => Promise<Host>
-): Promise<Host | null> {
+/** Ask the user for a profile file. Returns the path, or null if they cancelled. */
+export async function pickProfileFile(): Promise<string | null> {
   const result = await openDialog({
     title: "Import Host Profile",
     filters: [{ name: "Kino SSH Manager Profile", extensions: ["sshm", "json"] }],
     multiple: false,
   });
   if (!result) return null;
-  const path = Array.isArray(result) ? result[0] : result;
-  return importHostFromFile(path as string);
-}
-
-function slug(name: string) {
-  return name.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+  return (Array.isArray(result) ? result[0] : result) as string;
 }
