@@ -4,6 +4,44 @@ All notable changes to Kino SSH Manager are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.6.0] - 2026-07-22
+
+### Added
+- **AI copilot** - an opt-in, bring-your-own-key assistant embedded in the
+  terminal, powered by [OpenRouter](https://openrouter.ai) (one key reaches
+  every major model). Ask about the host you're on, paste an error, or have it
+  explain recent output; suggested shell commands come as one-click "Run"
+  blocks. The key is encrypted in the vault like every other secret and only
+  ever leaves the machine to call OpenRouter. **Off by default** - enable it
+  under **Settings - AI Copilot**.
+- **Select text - Copy / Explain by AI** - selecting text in any terminal now
+  shows a small tooltip to copy it, or send it straight to the copilot for an
+  explanation.
+- **Customizable keyboard shortcuts** - rebind the command palette, broadcast
+  toggle, terminal find, copy, paste, and font-size shortcuts under **Settings -
+  Keyboard Shortcuts**, with live conflict detection and per-action reset.
+- **Session restore on unlock** - optionally remember the open tabs and pane
+  layout (including pane names) and rebuild them the next time you unlock,
+  reconnecting each host into its original pane. Opt-in under Settings.
+- **Home favorites** - pin hosts to the empty-pane landing view for one-click
+  connect. Star a host in the sidebar or use its right-click menu.
+- **Rename panes** - give split panes their own names; the names also appear in
+  the tab "Move to pane" menu.
+- **Terminal copy & paste shortcuts** - `Ctrl+Shift+C` copies the selection and
+  `Ctrl+Shift+V` pastes, alongside the existing right-click and OSC 52 paths.
+- **Eight more themes** - Solarized Dark/Light, One Dark, Monokai Pro, Rosé
+  Pine, Everforest Dark, Ayu Mirage, and GitHub Light (14 total). The Settings
+  theme picker is now a single grouped dropdown.
+- **Update available on the login screen** - the release check now runs at
+  launch and surfaces a badge on the unlock screen, not just after unlocking.
+- **Choose an existing group** - the host editor's Folder / Group field offers a
+  dropdown of groups already in use, preventing near-duplicates.
+
+### Changed
+- The AI copilot is now OpenRouter-only. The previous Claude (Anthropic) and
+  Gemini (Google) providers - including the Anthropic sign-in flow - have been
+  removed in favor of a single provider that fronts every model.
+
 ## [0.5.0] - 2026-07-14
 
 ### Added
@@ -18,7 +56,7 @@ on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
     command to run on the target.
   - The SSH session stays end-to-end encrypted - the relay only forwards bytes
     and never sees your credentials.
-  - **Off by default.** Enable it under **Settings → Kino Agent**; when off, all
+  - **Off by default.** Enable it under **Settings - Kino Agent**; when off, all
     agent/relay UI is hidden. It auto-enables if your vault already contains
     agent hosts, so existing configuration is never hidden.
   - A default relay URL can be set in Settings and is pre-filled for new hosts.
@@ -54,7 +92,7 @@ on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
   - A **Record / Stop** toggle in the terminal toolbar starts and stops capture
     for the active session, with a live "recording" indicator.
   - Recordings are saved to `~/Videos/Kino Recordings`.
-  - A **Recordings** manager (Settings → Recordings) lists every recording with
+  - A **Recordings** manager (Settings - Recordings) lists every recording with
     its date and size, and plays them back in an embedded asciinema player or
     deletes them.
 - **Remote file editor** - open a text file from the SFTP browser to edit it in

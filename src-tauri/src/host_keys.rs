@@ -5,9 +5,9 @@
 //! [`key_for`]). Fingerprints aren't secret, so this file is plain
 //! JSON, mirroring how OpenSSH's known_hosts is plaintext. On connect we compare
 //! the server's presented key against the stored fingerprint:
-//!   - match    → proceed
-//!   - changed  → refuse (possible MITM) until the user re-trusts
-//!   - unknown  → first contact; the UI shows the fingerprint and asks to trust
+//!   - match    - proceed
+//!   - changed  - refuse (possible MITM) until the user re-trusts
+//!   - unknown  - first contact; the UI shows the fingerprint and asks to trust
 
 use russh::keys::ssh_key::{HashAlg, PublicKey};
 use serde::Serialize;
@@ -174,6 +174,11 @@ mod tests {
             connection_mode: mode.map(Into::into),
             agent_id: agent_id.map(Into::into),
             relay_url: None,
+            proxy_type: None,
+            proxy_host: None,
+            proxy_port: None,
+            proxy_username: None,
+            proxy_password: None,
         }
     }
 

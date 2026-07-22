@@ -23,7 +23,7 @@ use crate::ssh_session::ClientHandler;
 
 type SshHandle = Arc<client::Handle<ClientHandler>>;
 
-/// stream_id → the running `docker logs --follow` task (aborted on stop).
+/// stream_id - the running `docker logs --follow` task (aborted on stop).
 pub type LogStreams = Arc<Mutex<HashMap<String, tokio::task::JoinHandle<()>>>>;
 
 /// Quick queries (`ps`, `logs`) - fail fast if the host is unresponsive.

@@ -21,7 +21,7 @@ pub struct UpdateInfo {
 }
 
 /// Parse a dotted version into numeric components, ignoring any pre-release
-/// suffix (`0.4.1-rc.2` → `[0, 4, 1]`).
+/// suffix (`0.4.1-rc.2` - `[0, 4, 1]`).
 fn parts(v: &str) -> Vec<u64> {
     v.trim()
         .trim_start_matches('v')

@@ -1,3 +1,4 @@
+mod ai;
 mod docker;
 mod forwarding;
 mod history;
@@ -5,9 +6,11 @@ mod host_keys;
 mod keygen;
 mod local_session;
 mod metrics;
+mod processes;
 mod recorder;
 mod sftp_session;
 mod snippets;
+mod ssh_config;
 mod ssh_session;
 mod sync;
 mod update;
@@ -31,6 +34,7 @@ pub struct AppState {
     pub sftp_sessions: Arc<Mutex<HashMap<String, sftp_session::SftpHandle>>>,
     pub metrics_streams: metrics::MetricsStreams,
     pub docker_log_streams: docker::LogStreams,
+    pub ai_cancels: ai::AiCancels,
 }
 
 // ── Vault commands ────────────────────────────────────────────────────────────
@@ -708,6 +712,49 @@ fn save_session_log(content: String, path: String) -> Result<(), String> {
     std::fs::write(&path, content).map_err(|e| format!("Cannot write log: {}", e))
 }
 
+/// Parse the user's `~/.ssh/config` into importable hosts (no disk writes here).
+#[tauri::command]
+fn import_ssh_config() -> Result<Vec<vault::Host>, String> {
+    ssh_config::import()
+}
+
+/// Write the vault's hosts into a managed block in `~/.ssh/config`.
+#[tauri::command]
+fn export_ssh_config(state: State<'_, AppState>) -> Result<usize, String> {
+    let hosts = state.hosts.lock().unwrap().clone();
+    ssh_config::export(&hosts)
+}
+
+/// Append a public key to the host's `~/.ssh/authorized_keys`, idempotently.
+///
+/// Runs over a throwaway connection authenticated with the host's configured
+/// method (typically a password), which is the point: it's how you bootstrap
+/// key auth. Host-key pinning still applies, so the host must be trusted first.
+#[tauri::command]
+async fn install_public_key(host: Host, public_key: String) -> Result<(), String> {
+    let key = public_key.trim();
+    if key.is_empty() {
+        return Err("No public key to install".to_string());
+    }
+    // authorized_keys is line-oriented; a multi-line value would corrupt it.
+    if key.lines().count() != 1 {
+        return Err("A public key must be a single line".to_string());
+    }
+    if !key.starts_with("ssh-") && !key.starts_with("ecdsa-") && !key.starts_with("sk-") {
+        return Err("That doesn't look like an OpenSSH public key".to_string());
+    }
+
+    let quoted = format!("'{}'", key.replace('\'', "'\\''"));
+    // Braces keep the `||` bound to the grep alone, so the append only happens
+    // when the key isn't already present.
+    let cmd = format!(
+        "set -e; mkdir -p ~/.ssh && chmod 700 ~/.ssh && touch ~/.ssh/authorized_keys && \
+         chmod 600 ~/.ssh/authorized_keys && \
+         {{ grep -qxF {quoted} ~/.ssh/authorized_keys || printf '%s\\n' {quoted} >> ~/.ssh/authorized_keys; }}"
+    );
+    ssh_session::exec_once(&host, &cmd).await.map(|_| ())
+}
+
 #[tauri::command]
 fn import_host(path: String) -> Result<vault::Host, String> {
     let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
@@ -1263,9 +1310,9 @@ async fn start_forward(
     };
 
     // Field meanings per kind (see the frontend):
-    //   local : listen on local_port → forward to remote_host:remote_port
+    //   local : listen on local_port - forward to remote_host:remote_port
     //   socks : SOCKS5 proxy on local_port
-    //   remote: server listens on bind_host:remote_port → forward to
+    //   remote: server listens on bind_host:remote_port - forward to
     //           remote_host:local_port on the app side
     let handle = match kind.as_deref().unwrap_or("local") {
         "local" => {
@@ -1338,6 +1385,7 @@ pub fn run() {
         sftp_sessions: Arc::new(Mutex::new(HashMap::new())),
         metrics_streams: Arc::new(Mutex::new(HashMap::new())),
         docker_log_streams: Arc::new(Mutex::new(HashMap::new())),
+        ai_cancels: Arc::new(Mutex::new(HashMap::new())),
     };
 
     tauri::Builder::default()
@@ -1362,6 +1410,9 @@ pub fn run() {
             read_key_file,
             save_session_log,
             import_host,
+            import_ssh_config,
+            export_ssh_config,
+            install_public_key,
             profile_is_encrypted,
             import_host_encrypted,
             ssh_connect,
@@ -1408,6 +1459,13 @@ pub fn run() {
             docker::docker_shell,
             metrics::metrics_start,
             metrics::metrics_stop,
+            processes::processes_list,
+            processes::process_kill,
+            ai::ai_get_config,
+            ai::ai_set_config,
+            ai::ai_list_models,
+            ai::ai_send,
+            ai::ai_cancel,
             update::check_for_update,
             start_recording,
             stop_recording,
@@ -1444,6 +1502,11 @@ mod export_tests {
             connection_mode: None,
             agent_id: None,
             relay_url: None,
+            proxy_type: None,
+            proxy_host: None,
+            proxy_port: None,
+            proxy_username: None,
+            proxy_password: None,
         }
     }
 

@@ -22,7 +22,7 @@ export function Unlock() {
   const [token, setToken] = useState("");
   const [version, setVersion] = useState("");
 
-  const { unlock, checkVaultExists, syncRestore } = useVaultStore();
+  const { unlock, checkVaultExists, syncRestore, updateInfo } = useVaultStore();
 
   useState(() => {
     checkVaultExists().then((exists) => setIsNew(!exists));
@@ -85,6 +85,20 @@ export function Unlock() {
           </svg>
           View on GitHub
         </button>
+
+        {updateInfo?.available && (
+          <button
+            className="unlock-update"
+            onClick={() => openUrl(updateInfo.url).catch(() => {})}
+            title={`v${updateInfo.current} - v${updateInfo.latest}`}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 19V5" />
+              <polyline points="5 12 12 5 19 12" />
+            </svg>
+            Update available - v{updateInfo.latest}
+          </button>
+        )}
 
         {mode === "vault" ? (
           <>
@@ -150,7 +164,7 @@ export function Unlock() {
                 className="unlock-link"
                 onClick={() => { setMode("restore"); setError(""); }}
               >
-                Restore from cloud sync →
+                Restore from cloud sync -
               </button>
             )}
           </>

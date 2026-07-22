@@ -17,7 +17,13 @@ const STEPS = [
 const STEP_CONNECTION = 0;
 
 export function HostForm({ host, onClose }: Props) {
-  const { saveHost, generateSshKey, loadKeyFile, snippets, relayEnabled } = useVaultStore();
+  const { saveHost, generateSshKey, loadKeyFile, installPublicKey, snippets, relayEnabled, hosts } = useVaultStore();
+
+  // Groups already in use, so the user can pick one instead of retyping (and
+  // risking a near-duplicate like "Prod" vs "Production").
+  const existingGroups = Array.from(
+    new Set(hosts.map((h) => h.group?.trim()).filter((g): g is string => !!g))
+  ).sort((a, b) => a.localeCompare(b));
 
   const [step, setStep] = useState(0);
 
@@ -38,16 +44,27 @@ export function HostForm({ host, onClose }: Props) {
   const [color, setColor] = useState<string>(host?.color ?? "");
   const [notes, setNotes] = useState(host?.notes ?? "");
   const [group, setGroup] = useState(host?.group ?? "");
+  // Whether the group field is in "type a new name" mode vs. picking an existing one.
+  const [creatingGroup, setCreatingGroup] = useState(false);
   const [os, setOs] = useState(host?.os ?? "");
   const [connectionMode, setConnectionMode] = useState(host?.connection_mode ?? "direct");
   const [agentId, setAgentId] = useState(host?.agent_id ?? "");
   const [relayUrl, setRelayUrl] = useState(host?.relay_url ?? useVaultStore.getState().defaultRelayUrl);
+
+  // Proxy (dial-through) config - only applies to direct connections.
+  const [proxyType, setProxyType] = useState<string>(host?.proxy_type ?? "");
+  const [proxyHost, setProxyHost] = useState(host?.proxy_host ?? "");
+  const [proxyPort, setProxyPort] = useState<number>(host?.proxy_port ?? 1080);
+  const [proxyUsername, setProxyUsername] = useState(host?.proxy_username ?? "");
+  const [proxyPassword, setProxyPassword] = useState(host?.proxy_password ?? "");
 
   const TAG_COLORS = ["#f38ba8", "#fab387", "#f9e2af", "#a6e3a1", "#89b4fa", "#cba6f7", "#4c7ebf"];
 
   const [copiedPub, setCopiedPub] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [installing, setInstalling] = useState(false);
+  const [installMsg, setInstallMsg] = useState("");
 
   function generatePassword() {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*-_=+";
@@ -115,6 +132,45 @@ export function HostForm({ host, onClose }: Props) {
     setTimeout(() => setCopiedPub(false), 2000);
   }
 
+  /** Append the public key to the server's authorized_keys over a one-shot
+   *  connection. Prefers password auth when one is stored, since the whole
+   *  point is usually to bootstrap key auth before it works. */
+  async function handleInstallKey() {
+    setInstalling(true);
+    setError("");
+    setInstallMsg("");
+    try {
+      await installPublicKey(
+        {
+          id: host?.id ?? "",
+          name,
+          hostname,
+          port,
+          username,
+          default_auth: password ? "Password" : defaultAuth,
+          password: password || null,
+          private_key: privateKey || null,
+          public_key: publicKey || null,
+          passphrase: passphrase || null,
+          connection_mode: connectionMode,
+          agent_id: agentId || null,
+          relay_url: relayUrl || null,
+          proxy_type: connectionMode === "direct" && proxyType ? proxyType : null,
+          proxy_host: connectionMode === "direct" && proxyType ? proxyHost || null : null,
+          proxy_port: connectionMode === "direct" && proxyType ? proxyPort : null,
+          proxy_username: connectionMode === "direct" && proxyType ? proxyUsername || null : null,
+          proxy_password: connectionMode === "direct" && proxyType ? proxyPassword || null : null,
+        },
+        publicKey
+      );
+      setInstallMsg("Installed - this host now accepts your key.");
+    } catch (e: any) {
+      setError(String(e));
+    } finally {
+      setInstalling(false);
+    }
+  }
+
   /** Report a validation failure on the step that owns the offending field. */
   function fail(onStep: number, message: string) {
     setStep(onStep);
@@ -137,6 +193,10 @@ export function HostForm({ host, onClose }: Props) {
     }
     if (defaultAuth === "SshKey" && !privateKey) {
       fail(STEP_CONNECTION, "SSH private key is required when default auth is SSH Key");
+      return;
+    }
+    if (connectionMode === "direct" && proxyType && !proxyHost.trim()) {
+      fail(2, "Proxy host is required when a proxy is selected");
       return;
     }
     setSaving(true);
@@ -162,6 +222,11 @@ export function HostForm({ host, onClose }: Props) {
         connection_mode: connectionMode,
         agent_id: agentId || null,
         relay_url: relayUrl || null,
+        proxy_type: connectionMode === "direct" && proxyType ? proxyType : null,
+        proxy_host: connectionMode === "direct" && proxyType ? proxyHost || null : null,
+        proxy_port: connectionMode === "direct" && proxyType ? proxyPort : null,
+        proxy_username: connectionMode === "direct" && proxyType ? proxyUsername || null : null,
+        proxy_password: connectionMode === "direct" && proxyType ? proxyPassword || null : null,
       });
       onClose();
     } catch (e: any) {
@@ -331,8 +396,19 @@ export function HostForm({ host, onClose }: Props) {
                     >
                       SSH Key
                     </button>
+                    <button
+                      type="button"
+                      className={defaultAuth === "Agent" ? "active" : ""}
+                      onClick={() => setDefaultAuth("Agent")}
+                    >
+                      SSH Agent
+                    </button>
                   </div>
-                  <p className="hint">Both can be stored - this sets which is used by default when connecting.</p>
+                  <p className="hint">
+                    {defaultAuth === "Agent"
+                      ? "Authenticates via your running SSH agent (OpenSSH agent, or Pageant on Windows). No secret is stored in the vault."
+                      : "Any of these can be stored - this sets which is used by default when connecting."}
+                  </p>
                 </div>
 
                 <div className="form-section">
@@ -410,9 +486,30 @@ export function HostForm({ host, onClose }: Props) {
                         <button type="button" className="btn btn-sm" onClick={handleCopyPub}>
                           {copiedPub ? "Copied!" : "Copy"}
                         </button>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-primary"
+                          onClick={handleInstallKey}
+                          disabled={installing || !hostname || !username || connectionMode !== "direct"}
+                          title={
+                            connectionMode !== "direct"
+                              ? "Only available for direct SSH connections"
+                              : "Append this key to ~/.ssh/authorized_keys on the server"
+                          }
+                        >
+                          {installing ? "Installing…" : "Install on server"}
+                        </button>
                       </div>
                       <textarea value={publicKey} readOnly rows={2} className="mono" />
-                      <p className="hint">Paste into ~/.ssh/authorized_keys on the server</p>
+                      {installMsg ? (
+                        <p className="hint" style={{ color: "var(--green)" }}>{installMsg}</p>
+                      ) : (
+                        <p className="hint">
+                          “Install on server” appends this to ~/.ssh/authorized_keys over SSH
+                          (using the stored password, if any). The host key must already be trusted -
+                          connect once first. Or copy it and paste it yourself.
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -488,7 +585,7 @@ export function HostForm({ host, onClose }: Props) {
                           max={65535}
                           className="fwd-port-input"
                         />
-                        <span className="fwd-arrow">→</span>
+                        <span className="fwd-arrow">-</span>
                         <input
                           placeholder="target host"
                           title="Local target host"
@@ -517,7 +614,7 @@ export function HostForm({ host, onClose }: Props) {
                           max={65535}
                           className="fwd-port-input"
                         />
-                        <span className="fwd-arrow">→</span>
+                        <span className="fwd-arrow">-</span>
                         <input
                           placeholder="Remote host"
                           title="Remote host"
@@ -613,11 +710,49 @@ export function HostForm({ host, onClose }: Props) {
 
                 <div className="form-row">
                   <label>Folder / Group <span className="hint-inline">(optional)</span></label>
-                  <input
-                    value={group}
-                    onChange={(e) => setGroup(e.target.value)}
-                    placeholder="e.g. Production, Homelab"
-                  />
+                  {existingGroups.length > 0 && !creatingGroup ? (
+                    <select
+                      className="settings-select"
+                      value={existingGroups.includes(group) ? group : ""}
+                      onChange={(e) => {
+                        if (e.target.value === "__new__") {
+                          setGroup("");
+                          setCreatingGroup(true);
+                        } else {
+                          setGroup(e.target.value);
+                        }
+                      }}
+                    >
+                      <option value="">No group</option>
+                      {existingGroups.map((g) => (
+                        <option key={g} value={g}>
+                          {g}
+                        </option>
+                      ))}
+                      <option value="__new__">+ New group…</option>
+                    </select>
+                  ) : (
+                    <div className="group-new-row">
+                      <input
+                        value={group}
+                        onChange={(e) => setGroup(e.target.value)}
+                        placeholder="e.g. Production, Homelab"
+                        autoFocus={creatingGroup}
+                      />
+                      {existingGroups.length > 0 && (
+                        <button
+                          type="button"
+                          className="btn btn-sm"
+                          onClick={() => {
+                            setGroup("");
+                            setCreatingGroup(false);
+                          }}
+                        >
+                          Pick existing
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="form-row">
@@ -637,6 +772,75 @@ export function HostForm({ host, onClose }: Props) {
                   </div>
                 </div>
 
+                {connectionMode === "direct" && (
+                  <div className="form-section">
+                    <div className="form-section-title">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M4 12h16M4 6h16M4 18h16" />
+                      </svg>
+                      <span>Proxy</span>
+                      <span className="hint-inline" style={{ marginLeft: "auto" }}>dial through a SOCKS5 / HTTP proxy</span>
+                    </div>
+                    <div className="form-row">
+                      <select
+                        className="settings-select"
+                        value={proxyType}
+                        onChange={(e) => setProxyType(e.target.value)}
+                      >
+                        <option value="">No proxy (direct)</option>
+                        <option value="socks5">SOCKS5</option>
+                        <option value="http">HTTP CONNECT</option>
+                      </select>
+                    </div>
+                    {proxyType && (
+                      <>
+                        <div className="form-row two-col">
+                          <div>
+                            <label>Proxy host</label>
+                            <input
+                              value={proxyHost}
+                              onChange={(e) => setProxyHost(e.target.value)}
+                              placeholder="127.0.0.1"
+                            />
+                          </div>
+                          <div>
+                            <label>Proxy port</label>
+                            <input
+                              type="number"
+                              value={proxyPort}
+                              onChange={(e) => setProxyPort(Number(e.target.value))}
+                              min={1}
+                              max={65535}
+                            />
+                          </div>
+                        </div>
+                        <div className="form-row two-col">
+                          <div>
+                            <label>Proxy username <span className="hint-inline">(optional)</span></label>
+                            <input
+                              value={proxyUsername}
+                              onChange={(e) => setProxyUsername(e.target.value)}
+                              autoComplete="off"
+                            />
+                          </div>
+                          <div>
+                            <label>Proxy password <span className="hint-inline">(optional)</span></label>
+                            <input
+                              type="password"
+                              value={proxyPassword}
+                              onChange={(e) => setProxyPassword(e.target.value)}
+                              autoComplete="off"
+                            />
+                          </div>
+                        </div>
+                        {proxyType === "socks5" && (
+                          <p className="hint">The proxy resolves the hostname (no DNS leak).</p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+
                 <div className="form-section">
                   <div className="form-section-title">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -646,7 +850,7 @@ export function HostForm({ host, onClose }: Props) {
                     <span>Run on connect</span>
                   </div>
                   {snippets.length === 0 ? (
-                    <p className="hint">No snippets yet. Create them in Settings → Snippets, then select them here.</p>
+                    <p className="hint">No snippets yet. Create them in Settings - Snippets, then select them here.</p>
                   ) : (
                     <>
                       <p className="hint">Selected snippets run automatically, in order, after connecting.</p>

@@ -18,7 +18,7 @@ use crate::ssh_session::ClientHandler;
 
 type SshHandle = Arc<russh::client::Handle<ClientHandler>>;
 
-/// stream_id → the running sampler task (aborted on stop).
+/// stream_id - the running sampler task (aborted on stop).
 pub type MetricsStreams = Arc<Mutex<HashMap<String, tokio::task::JoinHandle<()>>>>;
 
 /// One cheap command gathers everything from `/proc` + `df`. Each line is

@@ -116,16 +116,224 @@ pub async fn connect_to_host(host: &Host) -> Result<NetStream, String> {
 
         Ok(NetStream::Duplex(client_stream))
     } else {
-        let stream = tokio::net::TcpStream::connect((host.hostname.as_str(), host.port))
-            .await
-            .map_err(|e| {
-                format!(
-                    "Failed to connect to {}:{}: {}",
-                    host.hostname, host.port, e
-                )
-            })?;
+        let stream = open_target_stream(host).await?;
         Ok(NetStream::Tcp(stream))
     }
+}
+
+/// Open a TCP stream to the host's SSH endpoint, optionally through a proxy.
+/// When a proxy is configured the hostname is resolved *proxy-side* (no DNS leak
+/// for SOCKS5), and the target port is the host's SSH port.
+async fn open_target_stream(host: &Host) -> Result<tokio::net::TcpStream, String> {
+    let ptype = host
+        .proxy_type
+        .as_deref()
+        .map(str::trim)
+        .filter(|p| !p.is_empty() && *p != "none");
+    let proxy_host = host.proxy_host.as_deref().map(str::trim).unwrap_or("");
+    match ptype {
+        Some(kind) if !proxy_host.is_empty() => {
+            let proxy_port = host
+                .proxy_port
+                .ok_or("Proxy port not set for this host")?;
+            let user = host.proxy_username.as_deref().filter(|s| !s.is_empty());
+            let pass = host.proxy_password.as_deref().filter(|s| !s.is_empty());
+            match kind {
+                "socks5" | "socks" => {
+                    socks5_connect(
+                        proxy_host,
+                        proxy_port,
+                        user,
+                        pass,
+                        &host.hostname,
+                        host.port,
+                    )
+                    .await
+                }
+                "http" | "https" | "connect" => {
+                    http_connect(
+                        proxy_host,
+                        proxy_port,
+                        user,
+                        pass,
+                        &host.hostname,
+                        host.port,
+                    )
+                    .await
+                }
+                other => Err(format!("Unknown proxy type: {other}")),
+            }
+        }
+        _ => tokio::net::TcpStream::connect((host.hostname.as_str(), host.port))
+            .await
+            .map_err(|e| format!("Failed to connect to {}:{}: {}", host.hostname, host.port, e)),
+    }
+}
+
+/// Minimal SOCKS5 (RFC 1928) client with optional username/password auth
+/// (RFC 1929). The target host is sent as a domain name so the proxy resolves
+/// it - the DNS request never leaves the proxy side.
+async fn socks5_connect(
+    proxy_host: &str,
+    proxy_port: u16,
+    user: Option<&str>,
+    pass: Option<&str>,
+    target_host: &str,
+    target_port: u16,
+) -> Result<tokio::net::TcpStream, String> {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    let domain = target_host.as_bytes();
+    if domain.len() > 255 {
+        return Err("Target hostname too long for SOCKS5".to_string());
+    }
+
+    let mut s = tokio::net::TcpStream::connect((proxy_host, proxy_port))
+        .await
+        .map_err(|e| format!("Failed to reach SOCKS5 proxy {proxy_host}:{proxy_port}: {e}"))?;
+
+    // Greeting: offer no-auth and, if creds present, username/password.
+    let methods: &[u8] = if user.is_some() {
+        &[0x00, 0x02]
+    } else {
+        &[0x00]
+    };
+    let mut greeting = vec![0x05u8, methods.len() as u8];
+    greeting.extend_from_slice(methods);
+    s.write_all(&greeting)
+        .await
+        .map_err(|e| format!("SOCKS5 write failed: {e}"))?;
+
+    let mut sel = [0u8; 2];
+    s.read_exact(&mut sel)
+        .await
+        .map_err(|e| format!("SOCKS5 handshake failed: {e}"))?;
+    if sel[0] != 0x05 {
+        return Err("Proxy is not a SOCKS5 server".to_string());
+    }
+    match sel[1] {
+        0x00 => {} // no auth
+        0x02 => {
+            let u = user.unwrap_or("").as_bytes();
+            let p = pass.unwrap_or("").as_bytes();
+            if u.len() > 255 || p.len() > 255 {
+                return Err("SOCKS5 username/password too long".to_string());
+            }
+            let mut auth = vec![0x01u8, u.len() as u8];
+            auth.extend_from_slice(u);
+            auth.push(p.len() as u8);
+            auth.extend_from_slice(p);
+            s.write_all(&auth)
+                .await
+                .map_err(|e| format!("SOCKS5 auth write failed: {e}"))?;
+            let mut ar = [0u8; 2];
+            s.read_exact(&mut ar)
+                .await
+                .map_err(|e| format!("SOCKS5 auth failed: {e}"))?;
+            if ar[1] != 0x00 {
+                return Err("SOCKS5 proxy rejected the username/password".to_string());
+            }
+        }
+        0xFF => return Err("SOCKS5 proxy offered no acceptable auth method".to_string()),
+        _ => return Err("SOCKS5 proxy chose an unsupported auth method".to_string()),
+    }
+
+    // CONNECT request with ATYP=domain (proxy-side resolution).
+    let mut req = vec![0x05u8, 0x01, 0x00, 0x03, domain.len() as u8];
+    req.extend_from_slice(domain);
+    req.extend_from_slice(&target_port.to_be_bytes());
+    s.write_all(&req)
+        .await
+        .map_err(|e| format!("SOCKS5 connect write failed: {e}"))?;
+
+    let mut head = [0u8; 4];
+    s.read_exact(&mut head)
+        .await
+        .map_err(|e| format!("SOCKS5 connect failed: {e}"))?;
+    if head[1] != 0x00 {
+        return Err(format!(
+            "SOCKS5 proxy refused the connection (code {})",
+            head[1]
+        ));
+    }
+    // Consume the bound address so the stream is left at the start of payload.
+    match head[3] {
+        0x01 => {
+            let mut b = [0u8; 4];
+            s.read_exact(&mut b).await.map_err(|e| e.to_string())?;
+        }
+        0x03 => {
+            let mut l = [0u8; 1];
+            s.read_exact(&mut l).await.map_err(|e| e.to_string())?;
+            let mut b = vec![0u8; l[0] as usize];
+            s.read_exact(&mut b).await.map_err(|e| e.to_string())?;
+        }
+        0x04 => {
+            let mut b = [0u8; 16];
+            s.read_exact(&mut b).await.map_err(|e| e.to_string())?;
+        }
+        _ => return Err("SOCKS5 proxy returned an unknown address type".to_string()),
+    }
+    let mut port = [0u8; 2];
+    s.read_exact(&mut port).await.map_err(|e| e.to_string())?;
+    Ok(s)
+}
+
+/// HTTP CONNECT tunnel with optional Basic proxy auth.
+async fn http_connect(
+    proxy_host: &str,
+    proxy_port: u16,
+    user: Option<&str>,
+    pass: Option<&str>,
+    target_host: &str,
+    target_port: u16,
+) -> Result<tokio::net::TcpStream, String> {
+    use base64::Engine;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    let mut s = tokio::net::TcpStream::connect((proxy_host, proxy_port))
+        .await
+        .map_err(|e| format!("Failed to reach HTTP proxy {proxy_host}:{proxy_port}: {e}"))?;
+
+    let mut req = format!(
+        "CONNECT {target_host}:{target_port} HTTP/1.1\r\nHost: {target_host}:{target_port}\r\n"
+    );
+    if let Some(u) = user {
+        let creds = format!("{}:{}", u, pass.unwrap_or(""));
+        let encoded = base64::engine::general_purpose::STANDARD.encode(creds.as_bytes());
+        req.push_str(&format!("Proxy-Authorization: Basic {encoded}\r\n"));
+    }
+    req.push_str("\r\n");
+    s.write_all(req.as_bytes())
+        .await
+        .map_err(|e| format!("HTTP proxy write failed: {e}"))?;
+
+    // Read response headers up to the blank line.
+    let mut buf = Vec::with_capacity(256);
+    let mut byte = [0u8; 1];
+    loop {
+        let n = s
+            .read(&mut byte)
+            .await
+            .map_err(|e| format!("HTTP proxy read failed: {e}"))?;
+        if n == 0 {
+            return Err("HTTP proxy closed the connection during CONNECT".to_string());
+        }
+        buf.push(byte[0]);
+        if buf.len() >= 4 && &buf[buf.len() - 4..] == b"\r\n\r\n" {
+            break;
+        }
+        if buf.len() > 16 * 1024 {
+            return Err("HTTP proxy sent an oversized response".to_string());
+        }
+    }
+    let head = String::from_utf8_lossy(&buf);
+    let status_line = head.lines().next().unwrap_or("");
+    let code = status_line.split_whitespace().nth(1).unwrap_or("");
+    if code != "200" {
+        return Err(format!("HTTP proxy refused CONNECT: {}", status_line.trim()));
+    }
+    Ok(s)
 }
 
 pub enum TermCommand {
@@ -145,7 +353,7 @@ pub struct SshSession {
 
 pub type Sessions = Arc<Mutex<HashMap<String, SshSession>>>;
 
-/// `(bind_host, remote_port)` → `(local_target_host, local_target_port)`.
+/// `(bind_host, remote_port)` - `(local_target_host, local_target_port)`.
 /// Populated by remote forwards; consulted in `server_channel_open_forwarded_tcpip`.
 pub type RemoteRoutes = Arc<Mutex<HashMap<(String, u16), (String, u16)>>>;
 
@@ -198,6 +406,195 @@ impl client::Handler for ClientHandler {
     }
 }
 
+/// Authenticate using an SSH agent. On Windows this tries the OpenSSH agent
+/// (named pipe) and then Pageant; on Unix it uses `SSH_AUTH_SOCK`. Each identity
+/// held by the agent is offered to the server in turn.
+async fn agent_authenticate(
+    handle: &mut client::Handle<ClientHandler>,
+    username: &str,
+) -> Result<bool, String> {
+    #[cfg(windows)]
+    {
+        use russh::keys::agent::client::AgentClient;
+        let mut last_err = "No SSH agent found (tried the OpenSSH agent and Pageant)".to_string();
+        if let Ok(agent) = AgentClient::connect_named_pipe(r"\\.\pipe\openssh-ssh-agent").await {
+            match agent_try(handle, username, agent).await {
+                Ok(true) => return Ok(true),
+                Ok(false) => last_err = "The SSH agent has no key the server accepted".to_string(),
+                Err(e) => last_err = e,
+            }
+        }
+        if let Ok(agent) = AgentClient::connect_pageant().await {
+            match agent_try(handle, username, agent).await {
+                Ok(true) => return Ok(true),
+                Ok(false) => last_err = "The SSH agent has no key the server accepted".to_string(),
+                Err(e) => last_err = e,
+            }
+        }
+        Err(last_err)
+    }
+    #[cfg(unix)]
+    {
+        use russh::keys::agent::client::AgentClient;
+        let agent = AgentClient::connect_env().await.map_err(|e| {
+            format!("Could not connect to the SSH agent (is SSH_AUTH_SOCK set?): {e}")
+        })?;
+        agent_try(handle, username, agent).await
+    }
+    #[cfg(not(any(unix, windows)))]
+    {
+        let _ = (handle, username);
+        Err("SSH agent authentication is not supported on this platform".to_string())
+    }
+}
+
+/// Offer every identity the agent holds to the server, signing challenges via
+/// the agent. Returns `Ok(true)` on the first accepted key.
+async fn agent_try<S>(
+    handle: &mut client::Handle<ClientHandler>,
+    username: &str,
+    mut agent: russh::keys::agent::client::AgentClient<S>,
+) -> Result<bool, String>
+where
+    S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + Send,
+{
+    use russh::keys::ssh_key::Algorithm;
+    let identities = agent
+        .request_identities()
+        .await
+        .map_err(|e| format!("Failed to list SSH agent identities: {e}"))?;
+    if identities.is_empty() {
+        return Err("The SSH agent has no identities loaded".to_string());
+    }
+    for id in identities {
+        let key = id.public_key().into_owned();
+        // Only RSA needs rsa-sha2-256 forced; other key types sign natively.
+        let hash_alg = match key.algorithm() {
+            Algorithm::Rsa { .. } => Some(HashAlg::Sha256),
+            _ => None,
+        };
+        if let Ok(res) = handle
+            .authenticate_publickey_with(username, key, hash_alg, &mut agent)
+            .await
+        {
+            if res.success() {
+                return Ok(true);
+            }
+        }
+    }
+    Ok(false)
+}
+
+/// Authenticate an established connection using the host's configured method.
+async fn authenticate(
+    handle: &mut client::Handle<ClientHandler>,
+    host: &Host,
+) -> Result<(), String> {
+    let authenticated: bool = match host.default_auth.as_str() {
+        "Password" => {
+            let pw = host
+                .password
+                .as_deref()
+                .ok_or("No password stored for this host")?;
+            handle
+                .authenticate_password(&host.username, pw)
+                .await
+                .map_err(|e| format!("Auth error: {}", e))?
+                .success()
+        }
+        "SshKey" => {
+            let key_str = host
+                .private_key
+                .as_deref()
+                .ok_or("No SSH key stored for this host")?;
+            let key_pair = russh::keys::decode_secret_key(key_str, host.passphrase.as_deref())
+                .map_err(|e| format!("Invalid private key: {}", e))?;
+            let key = PrivateKeyWithHashAlg::new(Arc::new(key_pair), Some(HashAlg::Sha256));
+            handle
+                .authenticate_publickey(&host.username, key)
+                .await
+                .map_err(|e| format!("Auth error: {}", e))?
+                .success()
+        }
+        "Agent" => agent_authenticate(handle, &host.username).await?,
+        other => return Err(format!("Unknown auth method: {}", other)),
+    };
+    if !authenticated {
+        return Err("Authentication failed".to_string());
+    }
+    Ok(())
+}
+
+/// Open a fresh connection, run a single command, and return its stdout.
+///
+/// Used by one-shot operations (e.g. installing a public key) that shouldn't
+/// require - or disturb - a live terminal session. Host-key pinning is enforced
+/// exactly as it is for interactive sessions.
+pub async fn exec_once(host: &Host, command: &str) -> Result<String, String> {
+    let config = Arc::new(client::Config {
+        keepalive_interval: Some(Duration::from_secs(15)),
+        keepalive_max: 3,
+        ..Default::default()
+    });
+    let handler = ClientHandler {
+        host: host.clone(),
+        remote_routes: Arc::new(Mutex::new(HashMap::new())),
+    };
+
+    let stream = connect_to_host(host).await?;
+    let mut handle = tokio::time::timeout(
+        Duration::from_secs(15),
+        client::connect_stream(config, stream, handler),
+    )
+    .await
+    .map_err(|_| "Connection timed out".to_string())?
+    .map_err(|e| format!("Connection failed: {}", e))?;
+
+    authenticate(&mut handle, host).await?;
+
+    let mut channel = handle
+        .channel_open_session()
+        .await
+        .map_err(|e| format!("Failed to open channel: {}", e))?;
+    channel
+        .exec(true, command)
+        .await
+        .map_err(|e| format!("exec failed: {}", e))?;
+
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    let mut code: Option<u32> = None;
+    let read = tokio::time::timeout(Duration::from_secs(30), async {
+        loop {
+            match channel.wait().await {
+                Some(ChannelMsg::Data { data }) => stdout.extend_from_slice(&data),
+                Some(ChannelMsg::ExtendedData { data, .. }) => stderr.extend_from_slice(&data),
+                Some(ChannelMsg::ExitStatus { exit_status }) => code = Some(exit_status),
+                // ExitStatus can arrive after Eof, so read until Close/None.
+                Some(ChannelMsg::Close) | None => break,
+                _ => {}
+            }
+        }
+    })
+    .await;
+    if read.is_err() {
+        return Err("Command timed out".to_string());
+    }
+
+    match code {
+        Some(0) | None => Ok(String::from_utf8_lossy(&stdout).to_string()),
+        Some(c) => {
+            let msg = String::from_utf8_lossy(&stderr);
+            let msg = msg.trim();
+            Err(if msg.is_empty() {
+                format!("Command failed with exit code {}", c)
+            } else {
+                msg.to_string()
+            })
+        }
+    }
+}
+
 pub async fn connect(
     app_handle: AppHandle,
     sessions: Sessions,
@@ -229,32 +626,7 @@ pub async fn connect(
     .map_err(|_| "Connection timed out".to_string())?
     .map_err(|e| format!("Connection failed: {}", e))?;
 
-    // Authentication
-    let auth_res = match host.default_auth.as_str() {
-        "Password" => {
-            let pw = host
-                .password
-                .as_deref()
-                .ok_or("No password stored for this host")?;
-            handle.authenticate_password(&host.username, pw).await
-        }
-        "SshKey" => {
-            let key_str = host
-                .private_key
-                .as_deref()
-                .ok_or("No SSH key stored for this host")?;
-            let key_pair = russh::keys::decode_secret_key(key_str, host.passphrase.as_deref())
-                .map_err(|e| format!("Invalid private key: {}", e))?;
-            let key = PrivateKeyWithHashAlg::new(Arc::new(key_pair), Some(HashAlg::Sha256));
-            handle.authenticate_publickey(&host.username, key).await
-        }
-        other => return Err(format!("Unknown auth method: {}", other)),
-    };
-
-    let authenticated = auth_res.map_err(|e| format!("Auth error: {}", e))?;
-    if !authenticated.success() {
-        return Err("Authentication failed".to_string());
-    }
+    authenticate(&mut handle, &host).await?;
 
     let channel = handle
         .channel_open_session()

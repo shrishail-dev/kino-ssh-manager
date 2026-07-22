@@ -5,16 +5,20 @@ import { ExportMenu, pickProfileFile } from "./ExportMenu";
 import { HostForm } from "./HostForm";
 import { HostKeyDialog } from "./HostKeyDialog";
 import { ImportPasswordModal } from "./ImportPasswordModal";
+import { ContextMenu, MenuItem } from "./ContextMenu";
 import { OsIcon } from "./OsIcon";
 import { hostTarget } from "../utils";
 
 type HostKeyPrompt = { host: Host; verdict: Extract<HostKeyVerdict, { status: "new" | "changed" }> };
 
 export function Sidebar({ width }: { width: number }) {
-  const { hosts, connectToHost, deleteHost, importHostFromFile, profileIsEncrypted, verifyHostKey, trustHostKey, getHistory, openLocalShell } =
+  const { hosts, connectToHost, deleteHost, importHostFromFile, importSshConfig, profileIsEncrypted, verifyHostKey, trustHostKey, getHistory, openLocalShell,
+    panes, activePaneId, setActivePane, splitPane, favoriteHostIds, toggleFavoriteHost } =
     useVaultStore();
+  const [importingConfig, setImportingConfig] = useState(false);
   /** Path of an encrypted profile waiting on its password. */
   const [encryptedImport, setEncryptedImport] = useState<string | null>(null);
+  const [hostMenu, setHostMenu] = useState<{ x: number; y: number; host: Host } | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editHost, setEditHost] = useState<Host | undefined>();
   const [connecting, setConnecting] = useState<string | null>(null);
@@ -41,6 +45,25 @@ export function Sidebar({ width }: { width: number }) {
       setLastUsedMap(map);
     }).catch(console.error);
   }, [getHistory, connecting]);
+
+  // Bridge command-palette actions that need the sidebar's verified connect flow
+  // (host-key check) or the host form.
+  useEffect(() => {
+    const onConnect = (e: Event) => {
+      const id = (e as CustomEvent<string>).detail;
+      const host = useVaultStore.getState().hosts.find((h) => h.id === id);
+      if (host) handleConnect(host);
+    };
+    const onNewHost = () => { setEditHost(undefined); setShowForm(true); };
+    window.addEventListener("kino:connect-host", onConnect as EventListener);
+    window.addEventListener("kino:new-host", onNewHost);
+    return () => {
+      window.removeEventListener("kino:connect-host", onConnect as EventListener);
+      window.removeEventListener("kino:new-host", onNewHost);
+    };
+    // handleConnect is stable enough for this bridge; deps intentionally omitted.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const q = query.trim().toLowerCase();
   const visibleHosts = (q
@@ -171,6 +194,18 @@ export function Sidebar({ width }: { width: number }) {
     }
   }
 
+  // "Open in pane X" routes through the normal connect flow (host-key check and
+  // all) by making the target pane active first - new sessions open in the
+  // active pane, so no special-casing of the connect path is needed.
+  function openHostInPane(host: Host, paneId: string) {
+    setActivePane(paneId);
+    handleConnect(host);
+  }
+  function openHostInNewSplit(host: Host) {
+    splitPane(activePaneId); // splits after the active pane and focuses the new one
+    handleConnect(host);
+  }
+
   async function handleDelete(host: Host) {
     if (deleteConfirm === host.id) {
       await deleteHost(host.id);
@@ -178,6 +213,22 @@ export function Sidebar({ width }: { width: number }) {
     } else {
       setDeleteConfirm(host.id);
       setTimeout(() => setDeleteConfirm(null), 3000);
+    }
+  }
+
+  async function handleImportSshConfig() {
+    setImportingConfig(true);
+    try {
+      const added = await importSshConfig();
+      window.dispatchEvent(new CustomEvent("kino:toast", {
+        detail: added > 0
+          ? `Imported ${added} host${added === 1 ? "" : "s"} from ~/.ssh/config`
+          : "No new hosts found in ~/.ssh/config",
+      }));
+    } catch (e) {
+      alert(`Could not import ~/.ssh/config: ${e}`);
+    } finally {
+      setImportingConfig(false);
     }
   }
 
@@ -200,12 +251,15 @@ export function Sidebar({ width }: { width: number }) {
   }
 
   function authLabel(host: Host) {
+    if (host.default_auth === "Agent" && !host.private_key && !host.password) return "Agent";
     if (host.private_key && host.password) return "Key+PW";
     if (host.private_key) return "SSH Key";
+    if (host.default_auth === "Agent") return "Agent";
     return "Password";
   }
 
   function authClass(host: Host) {
+    if (host.default_auth === "Agent" && !host.private_key && !host.password) return "agent";
     if (host.private_key && host.password) return "both";
     if (host.private_key) return "key";
     return "pw";
@@ -283,6 +337,10 @@ export function Sidebar({ width }: { width: number }) {
                     key={host.id}
                     className="host-item"
                     style={host.color ? { borderTopColor: host.color } : undefined}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      setHostMenu({ x: e.clientX, y: e.clientY, host });
+                    }}
                   >
                     <span
                       className="host-avatar"
@@ -316,6 +374,15 @@ export function Sidebar({ width }: { width: number }) {
                         {authLabel(host)}
                       </span>
                     </div>
+                    <button
+                      className={`icon-btn host-fav ${favoriteHostIds.includes(host.id) ? "active" : ""}`}
+                      title={favoriteHostIds.includes(host.id) ? "Unpin from Home" : "Pin to Home"}
+                      onClick={() => toggleFavoriteHost(host.id)}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill={favoriteHostIds.includes(host.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                      </svg>
+                    </button>
                     <div className="host-actions">
                       {connecting === host.id ? (
                         <span className="connecting-spinner">…</span>
@@ -378,6 +445,14 @@ export function Sidebar({ width }: { width: number }) {
           <button className="btn import-btn" onClick={handleImport} disabled={importing}>
             {importing ? "Importing…" : "Import"}
           </button>
+          <button
+            className="btn import-btn"
+            onClick={handleImportSshConfig}
+            disabled={importingConfig}
+            title="Import hosts from your ~/.ssh/config"
+          >
+            {importingConfig ? "Importing…" : "SSH config"}
+          </button>
         </div>
       </aside>
 
@@ -412,6 +487,27 @@ export function Sidebar({ width }: { width: number }) {
           onImported={() => setEncryptedImport(null)}
         />
       )}
+
+      {hostMenu && (() => {
+        const { host } = hostMenu;
+        const items: MenuItem[] = [
+          { label: host.name, header: true },
+          ...(panes.length > 1
+            ? panes.map((pid, i): MenuItem => ({
+                label: `Open in pane ${i + 1}${pid === activePaneId ? " (current)" : ""}`,
+                onClick: () => openHostInPane(host, pid),
+              }))
+            : [{ label: "Connect", onClick: () => openHostInPane(host, activePaneId) } as MenuItem]),
+          { label: "Open in new split -", onClick: () => openHostInNewSplit(host) },
+          {
+            label: favoriteHostIds.includes(host.id) ? "Unpin from Home" : "Pin to Home",
+            onClick: () => toggleFavoriteHost(host.id),
+          },
+        ];
+        return (
+          <ContextMenu x={hostMenu.x} y={hostMenu.y} items={items} onClose={() => setHostMenu(null)} />
+        );
+      })()}
     </>
   );
 }

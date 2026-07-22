@@ -1,7 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
+import { clearTerminalOutput } from "../terminalBuffer";
+import { DEFAULT_KEYBINDINGS, KeyActionId } from "../keymap";
 
-export type DefaultAuth = "Password" | "SshKey";
+export type DefaultAuth = "Password" | "SshKey" | "Agent";
+
+export type ProxyType = "socks5" | "http";
 
 export type ForwardKind = "local" | "socks" | "remote";
 
@@ -37,6 +41,12 @@ export interface Host {
   connection_mode?: string | null;
   agent_id?: string | null;
   relay_url?: string | null;
+  /** Optional proxy to dial the host through: "socks5" or "http". */
+  proxy_type?: ProxyType | string | null;
+  proxy_host?: string | null;
+  proxy_port?: number | null;
+  proxy_username?: string | null;
+  proxy_password?: string | null;
 }
 
 export interface Snippet {
@@ -113,6 +123,47 @@ export interface RecordingInfo {
   created: number;
 }
 
+export interface ProcessInfo {
+  pid: number;
+  ppid: number;
+  cpu: number;
+  mem: number;
+  rss_kb: number;
+  user: string;
+  state: string;
+  command: string;
+}
+
+export type KillSignal = "TERM" | "KILL" | "HUP" | "INT";
+
+export type AiProvider = "openrouter";
+
+export interface AiConfigView {
+  configured: boolean;
+  provider: AiProvider;
+  model: string;
+  effort: string;
+  has_api_key: boolean;
+}
+
+export interface AiConfigInput {
+  provider: AiProvider;
+  /** Empty means "keep the stored key". */
+  api_key?: string;
+  model?: string;
+  effort?: string;
+}
+
+export interface AiModelInfo {
+  id: string;
+  label: string;
+}
+
+export interface AiMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
 export type HostKeyVerdict =
   | { status: "trusted" }
   | { status: "new"; fingerprint: string }
@@ -179,12 +230,26 @@ interface VaultStore {
   tabs: Tab[];
   panes: string[];
   activePaneId: string;
+  /** Optional user-given name per pane id; falls back to "Pane N" when unset. */
+  paneNames: Record<string, string>;
   activeTabIds: Record<string, string | null>;
   theme: string;
   idleLockMinutes: number;
   defaultRelayUrl: string;
   /** Feature flag - when false, all Kino Agent / relay UI is hidden. */
   relayEnabled: boolean;
+  /** Feature flag - when false, all AI Copilot UI is hidden. */
+  copilotEnabled: boolean;
+  /** Resolved keyboard shortcuts (defaults merged with user overrides). */
+  keybindings: Record<KeyActionId, string>;
+  /** When true, open tabs/panes are remembered and rebuilt on unlock. */
+  restoreSessionEnabled: boolean;
+  /** Host ids pinned to the home panel (empty-pane landing view). */
+  favoriteHostIds: string[];
+  /** When true, dropped SSH sessions auto-reconnect with exponential backoff. */
+  autoReconnect: boolean;
+  /** When true, keystrokes in the focused terminal fan out to every visible pane. */
+  broadcastInput: boolean;
   activeForwards: Set<string>;
 
   checkVaultExists: () => Promise<boolean>;
@@ -192,6 +257,36 @@ interface VaultStore {
   setIdleLockMinutes: (minutes: number) => void;
   setDefaultRelayUrl: (url: string) => void;
   setRelayEnabled: (on: boolean) => void;
+  setCopilotEnabled: (on: boolean) => void;
+  /** Rebind a shortcut. An empty combo clears the action's binding. */
+  setKeybinding: (id: KeyActionId, combo: string) => void;
+  /** Restore one action to its default combo. */
+  resetKeybinding: (id: KeyActionId) => void;
+  /** Restore every shortcut to its default. */
+  resetAllKeybindings: () => void;
+  setRestoreSessionEnabled: (on: boolean) => void;
+  /** Rebuild the tabs/panes captured at the last lock (best-effort, tolerant of failures). */
+  restoreLastSession: () => Promise<void>;
+  /** Pin/unpin a host from the home panel. */
+  toggleFavoriteHost: (id: string) => void;
+  setAutoReconnect: (on: boolean) => void;
+  setBroadcastInput: (on: boolean) => void;
+  /** Re-establish a dropped SSH tab in place (new session id, same tab). */
+  reconnectTab: (tabId: string) => Promise<void>;
+  /** Parse ~/.ssh/config and save any hosts not already present. Returns count added. */
+  importSshConfig: () => Promise<number>;
+  /** Write vault hosts into a managed block in ~/.ssh/config. Returns count written. */
+  exportSshConfig: () => Promise<number>;
+  /** Append a public key to the host's authorized_keys (idempotent). */
+  installPublicKey: (host: Host, publicKey: string) => Promise<void>;
+  processesList: (sessionId: string, local: boolean) => Promise<ProcessInfo[]>;
+  processKill: (sessionId: string, local: boolean, pid: number, signal: KillSignal) => Promise<void>;
+  aiGetConfig: () => Promise<AiConfigView | null>;
+  aiSetConfig: (config: AiConfigInput) => Promise<AiConfigView>;
+  aiListModels: () => Promise<AiModelInfo[]>;
+  /** Streams the reply over `ai-delta-<requestId>` events; see CopilotPanel. */
+  aiSend: (requestId: string, system: string, messages: AiMessage[]) => Promise<void>;
+  aiCancel: (requestId: string) => Promise<void>;
   startForward: (sessionId: string, forward: PortForward, host: Host) => Promise<void>;
   stopForward: (sessionId: string, forwardId: string) => Promise<void>;
   unlock: (password: string) => Promise<void>;
@@ -205,6 +300,12 @@ interface VaultStore {
   splitPane: (paneId: string) => void;
   closePane: (paneId: string) => void;
   setActivePane: (paneId: string) => void;
+  /** Rename a pane; an empty/blank name clears it back to the default "Pane N". */
+  renamePane: (paneId: string, name: string) => void;
+  /** Move an open tab (and its live session) into an existing pane. */
+  moveTabToPane: (tabId: string, targetPaneId: string) => void;
+  /** Split a new pane off and move the tab into it in one step. */
+  moveTabToNewSplit: (tabId: string) => void;
   markTabDisconnected: (sessionId: string) => void;
   generateSshKey: () => Promise<SshKeyPair>;
   loadKeyFile: (path: string) => Promise<string>;
@@ -280,6 +381,98 @@ function relayFlagWasSet() {
 function initialRelayEnabled() {
   return localStorage.getItem(RELAY_FLAG_KEY) === "1";
 }
+
+// AI Copilot is likewise opt-in: hidden until the user turns it on in Settings.
+const COPILOT_FLAG_KEY = "ssh-mgr:copilot-enabled";
+function initialCopilotEnabled() {
+  return localStorage.getItem(COPILOT_FLAG_KEY) === "1";
+}
+
+// Keyboard shortcuts: only user *overrides* are persisted (a diff from the
+// defaults), so shipping new defaults later doesn't get frozen out by old
+// stored maps. The resolved map merges defaults with those overrides.
+const KEYBINDINGS_KEY = "ssh-mgr:keybindings";
+function loadKeybindingOverrides(): Partial<Record<KeyActionId, string>> {
+  try {
+    return JSON.parse(localStorage.getItem(KEYBINDINGS_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+function saveKeybindingOverrides(o: Partial<Record<KeyActionId, string>>) {
+  localStorage.setItem(KEYBINDINGS_KEY, JSON.stringify(o));
+}
+function resolveKeybindings(): Record<KeyActionId, string> {
+  return { ...DEFAULT_KEYBINDINGS, ...loadKeybindingOverrides() };
+}
+
+// Hosts the user pinned to the home panel (the empty-pane landing view). Stored
+// by id in localStorage; the id is meaningless without the encrypted vault.
+const FAVORITES_KEY = "ssh-mgr:favorites";
+function initialFavorites(): string[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]");
+    return Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+// Session restore: remember the open tabs/panes so unlocking can rebuild them.
+// Only reconnectable tabs are stored (local shells and SSH tabs backed by a
+// vault host); the layout references hosts by id, so nothing is meaningful
+// without the (encrypted) vault. Opt-in via the setting below.
+const RESTORE_FLAG_KEY = "ssh-mgr:restore-session";
+const SESSION_KEY = "ssh-mgr:session";
+function initialRestoreEnabled() {
+  return localStorage.getItem(RESTORE_FLAG_KEY) === "1";
+}
+
+interface SessionTab {
+  hostId?: string;
+  kind: TabKind;
+  paneId: string;
+  title?: string;
+  active: boolean;
+}
+interface SessionSnapshot {
+  panes: string[];
+  activePaneId: string;
+  paneNames: Record<string, string>;
+  tabs: SessionTab[];
+}
+
+function serializeSession(state: VaultStore): SessionSnapshot {
+  return {
+    panes: state.panes,
+    activePaneId: state.activePaneId,
+    paneNames: state.paneNames,
+    tabs: state.tabs
+      .filter((t) => t.kind === "local" || !!t.host?.id)
+      .map((t) => ({
+        hostId: t.host?.id,
+        kind: t.kind,
+        paneId: t.paneId,
+        title: t.title,
+        active: state.activeTabIds[t.paneId] === t.id,
+      })),
+  };
+}
+
+function loadSessionSnapshot(): SessionSnapshot | null {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const snap = JSON.parse(raw) as SessionSnapshot;
+    return snap.tabs?.length ? snap : null;
+  } catch {
+    return null;
+  }
+}
+
+// Captured at unlock, before `unlocked` flips true and the live snapshotter
+// would overwrite the stored layout with the (empty) fresh state.
+let stashedSnapshot: SessionSnapshot | null = null;
 export function hasAgentHosts(hosts: Host[]) {
   return hosts.some((h) => h.connection_mode === "agent");
 }
@@ -295,11 +488,19 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
   tabs: [],
   panes: ["default"],
   activePaneId: "default",
+  paneNames: {},
   activeTabIds: { "default": null },
   theme: localStorage.getItem("ssh-mgr:theme") ?? "catppuccin-mocha",
   idleLockMinutes: Number(localStorage.getItem("ssh-mgr:idle-lock") ?? "0"),
   defaultRelayUrl: localStorage.getItem("ssh-mgr:relay-url") ?? "",
   relayEnabled: initialRelayEnabled(),
+  copilotEnabled: initialCopilotEnabled(),
+  keybindings: resolveKeybindings(),
+  restoreSessionEnabled: initialRestoreEnabled(),
+  favoriteHostIds: initialFavorites(),
+  // Auto-reconnect defaults on; broadcast is a transient per-run toggle (off).
+  autoReconnect: localStorage.getItem("ssh-mgr:auto-reconnect") !== "0",
+  broadcastInput: false,
   activeForwards: new Set<string>(),
   recordingSessions: new Set<string>(),
   updateInfo: null,
@@ -322,6 +523,156 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
   setRelayEnabled: (on) => {
     localStorage.setItem(RELAY_FLAG_KEY, on ? "1" : "0");
     set({ relayEnabled: on });
+  },
+
+  setCopilotEnabled: (on) => {
+    localStorage.setItem(COPILOT_FLAG_KEY, on ? "1" : "0");
+    set({ copilotEnabled: on });
+  },
+
+  setKeybinding: (id, combo) => {
+    const overrides = loadKeybindingOverrides();
+    // Store the override only when it differs from the default; otherwise drop
+    // it so the action tracks future default changes.
+    if (combo && combo !== DEFAULT_KEYBINDINGS[id]) overrides[id] = combo;
+    else delete overrides[id];
+    saveKeybindingOverrides(overrides);
+    set({ keybindings: resolveKeybindings() });
+  },
+
+  resetKeybinding: (id) => {
+    const overrides = loadKeybindingOverrides();
+    delete overrides[id];
+    saveKeybindingOverrides(overrides);
+    set({ keybindings: resolveKeybindings() });
+  },
+
+  resetAllKeybindings: () => {
+    localStorage.removeItem(KEYBINDINGS_KEY);
+    set({ keybindings: { ...DEFAULT_KEYBINDINGS } });
+  },
+
+  setRestoreSessionEnabled: (on) => {
+    localStorage.setItem(RESTORE_FLAG_KEY, on ? "1" : "0");
+    // Turning it off drops the stored layout so nothing lingers on disk.
+    if (!on) localStorage.removeItem(SESSION_KEY);
+    set({ restoreSessionEnabled: on });
+  },
+
+  toggleFavoriteHost: (id) => set((state) => {
+    const next = state.favoriteHostIds.includes(id)
+      ? state.favoriteHostIds.filter((x) => x !== id)
+      : [...state.favoriteHostIds, id];
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
+    return { favoriteHostIds: next };
+  }),
+
+  restoreLastSession: async () => {
+    const snap = stashedSnapshot;
+    stashedSnapshot = null;
+    if (!snap || !snap.tabs.length) return;
+
+    const hosts = get().hosts;
+    const panes = snap.panes.length ? snap.panes : ["default"];
+    const startPane =
+      snap.activePaneId && panes.includes(snap.activePaneId) ? snap.activePaneId : panes[0];
+    // Lay down the pane structure first; tabs get connected into each pane below.
+    set({
+      panes,
+      paneNames: snap.paneNames ?? {},
+      activePaneId: startPane,
+      activeTabIds: Object.fromEntries(panes.map((p) => [p, null])),
+    });
+
+    const desiredActive: Record<string, string> = {};
+    for (const paneId of panes) {
+      for (const t of snap.tabs.filter((x) => x.paneId === paneId)) {
+        // connectToHost / openLocalShell attach the new tab to activePaneId.
+        set({ activePaneId: paneId });
+        try {
+          if (t.kind === "local") {
+            await get().openLocalShell();
+          } else {
+            const host = hosts.find((h) => h.id === t.hostId);
+            if (!host) continue;
+            await get().connectToHost(host);
+          }
+        } catch {
+          continue; // host gone, auth failed, offline - skip and keep going
+        }
+        const addedId = get().activeTabIds[paneId];
+        if (!addedId) continue;
+        if (t.title) {
+          set((state) => ({
+            tabs: state.tabs.map((tb) => (tb.id === addedId ? { ...tb, title: t.title } : tb)),
+          }));
+        }
+        if (t.active) desiredActive[paneId] = addedId;
+      }
+    }
+
+    set((state) => ({
+      activeTabIds: { ...state.activeTabIds, ...desiredActive },
+      activePaneId: startPane,
+    }));
+  },
+
+  setAutoReconnect: (on) => {
+    localStorage.setItem("ssh-mgr:auto-reconnect", on ? "1" : "0");
+    set({ autoReconnect: on });
+  },
+
+  setBroadcastInput: (on) => set({ broadcastInput: on }),
+
+  reconnectTab: async (tabId) => {
+    const tab = get().tabs.find((t) => t.id === tabId);
+    if (!tab || tab.kind !== "ssh" || !tab.host) throw new Error("Not a reconnectable host");
+    const newSessionId = await invoke<string>("ssh_connect", { host: tab.host });
+    // Retire the old session's output buffer so the fresh view starts clean.
+    clearTerminalOutput(tab.sessionId);
+    invoke("log_history", {
+      event: {
+        id: crypto.randomUUID(),
+        timestamp: Date.now(),
+        event_type: "connection",
+        message: `Reconnected to ${tab.host.name}`,
+        host_id: tab.host.id,
+      },
+    }).catch(console.error);
+    set((state) => ({
+      tabs: state.tabs.map((t) =>
+        t.id === tabId ? { ...t, sessionId: newSessionId, connected: true } : t
+      ),
+    }));
+  },
+
+  importSshConfig: async () => {
+    const parsed = await invoke<Host[]>("import_ssh_config");
+    const existing = get().hosts;
+    const seen = new Set(
+      existing.map((h) => `${h.username}@${h.hostname}:${h.port}`.toLowerCase())
+    );
+    const fresh = parsed.filter(
+      (h) => !seen.has(`${h.username}@${h.hostname}:${h.port}`.toLowerCase())
+    );
+    let added = 0;
+    for (const host of fresh) {
+      const saved = await invoke<Host>("save_host", { host });
+      set((state) => ({ hosts: [...state.hosts, saved] }));
+      added++;
+    }
+    if (added > 0) {
+      invoke("log_history", {
+        event: {
+          id: crypto.randomUUID(),
+          timestamp: Date.now(),
+          event_type: "host_imported",
+          message: `Imported ${added} host${added === 1 ? "" : "s"} from ~/.ssh/config`,
+        },
+      }).catch(console.error);
+      autoPush();
+    }
+    return added;
   },
 
   startForward: async (sessionId, forward, host) => {
@@ -378,6 +729,10 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
       localStorage.setItem(RELAY_FLAG_KEY, "1");
       set({ relayEnabled: true });
     }
+    // Capture the saved layout now, before `unlocked` flips and the live
+    // snapshotter overwrites it with the empty fresh state. App triggers the
+    // actual restore once hosts are in place.
+    stashedSnapshot = get().restoreSessionEnabled ? loadSessionSnapshot() : null;
     set({ unlocked: true, hosts: finalHosts, snippets });
   },
 
@@ -394,7 +749,7 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
     get().tabs.forEach((t) =>
       invoke("ssh_disconnect", { sessionId: t.sessionId }).catch(() => {})
     );
-    set({ unlocked: false, hosts: [], tabs: [], panes: ["default"], activePaneId: "default", activeTabIds: { "default": null } });
+    set({ unlocked: false, hosts: [], tabs: [], panes: ["default"], activePaneId: "default", paneNames: {}, activeTabIds: { "default": null } });
   },
 
   saveHost: async (host) => {
@@ -437,7 +792,13 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
       }).catch(console.error);
     }
     await invoke("delete_host", { id });
-    set((state) => ({ hosts: state.hosts.filter((h) => h.id !== id) }));
+    set((state) => {
+      const favoriteHostIds = state.favoriteHostIds.filter((x) => x !== id);
+      if (favoriteHostIds.length !== state.favoriteHostIds.length) {
+        localStorage.setItem(FAVORITES_KEY, JSON.stringify(favoriteHostIds));
+      }
+      return { hosts: state.hosts.filter((h) => h.id !== id), favoriteHostIds };
+    });
     autoPush();
   },
 
@@ -507,6 +868,7 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
   closeTab: (tabId) => {
     const tab = get().tabs.find((t) => t.id === tabId);
     if (tab) {
+      clearTerminalOutput(tab.sessionId);
       if (tab.kind === "local") {
         invoke("local_disconnect", { sessionId: tab.sessionId }).catch(() => {});
       } else {
@@ -564,6 +926,7 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
     // Before updating state, cleanly disconnect all tabs in this pane
     const tabsInPane = get().tabs.filter((t) => t.paneId === paneId);
     tabsInPane.forEach((tab) => {
+      clearTerminalOutput(tab.sessionId);
       if (tab.kind === "local") {
         invoke("local_disconnect", { sessionId: tab.sessionId }).catch(() => {});
       } else {
@@ -577,19 +940,71 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
       const newTabs = state.tabs.filter((t) => t.paneId !== paneId);
       const newActiveTabIds = { ...state.activeTabIds };
       delete newActiveTabIds[paneId];
-      
+      const newPaneNames = { ...state.paneNames };
+      delete newPaneNames[paneId];
+
       const newActivePaneId = state.activePaneId === paneId ? newPanes[newPanes.length - 1] : state.activePaneId;
-      
+
       return {
         panes: newPanes,
         tabs: newTabs,
         activeTabIds: newActiveTabIds,
+        paneNames: newPaneNames,
         activePaneId: newActivePaneId,
       };
     });
   },
 
   setActivePane: (paneId) => set({ activePaneId: paneId }),
+
+  renamePane: (paneId, name) => set((state) => {
+    const trimmed = name.trim();
+    const paneNames = { ...state.paneNames };
+    // Blank clears the custom name so the pane reverts to its default "Pane N".
+    if (trimmed) paneNames[paneId] = trimmed;
+    else delete paneNames[paneId];
+    return { paneNames };
+  }),
+
+  moveTabToPane: (tabId, targetPaneId) => set((state) => {
+    const tab = state.tabs.find((t) => t.id === tabId);
+    if (!tab || tab.paneId === targetPaneId || !state.panes.includes(targetPaneId)) return state;
+    const sourcePaneId = tab.paneId;
+    const newTabs = state.tabs.map((t) => (t.id === tabId ? { ...t, paneId: targetPaneId } : t));
+    // If the moved tab was active in its old pane, promote another tab there.
+    const sourceTabs = newTabs.filter((t) => t.paneId === sourcePaneId);
+    const sourceActive =
+      state.activeTabIds[sourcePaneId] === tabId
+        ? sourceTabs.length > 0 ? sourceTabs[sourceTabs.length - 1].id : null
+        : state.activeTabIds[sourcePaneId];
+    return {
+      tabs: newTabs,
+      activePaneId: targetPaneId,
+      activeTabIds: { ...state.activeTabIds, [sourcePaneId]: sourceActive, [targetPaneId]: tabId },
+    };
+  }),
+
+  moveTabToNewSplit: (tabId) => set((state) => {
+    const tab = state.tabs.find((t) => t.id === tabId);
+    if (!tab) return state;
+    const sourcePaneId = tab.paneId;
+    const newPaneId = crypto.randomUUID();
+    const idx = state.panes.indexOf(sourcePaneId);
+    const newPanes = [...state.panes];
+    newPanes.splice(idx + 1, 0, newPaneId);
+    const newTabs = state.tabs.map((t) => (t.id === tabId ? { ...t, paneId: newPaneId } : t));
+    const sourceTabs = newTabs.filter((t) => t.paneId === sourcePaneId);
+    const sourceActive =
+      state.activeTabIds[sourcePaneId] === tabId
+        ? sourceTabs.length > 0 ? sourceTabs[sourceTabs.length - 1].id : null
+        : state.activeTabIds[sourcePaneId];
+    return {
+      panes: newPanes,
+      tabs: newTabs,
+      activePaneId: newPaneId,
+      activeTabIds: { ...state.activeTabIds, [sourcePaneId]: sourceActive, [newPaneId]: tabId },
+    };
+  }),
 
   markTabDisconnected: (sessionId) => {
     const tab = get().tabs.find((t) => t.sessionId === sessionId);
@@ -703,6 +1118,44 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
     autoPush();
     return saved;
   },
+
+  exportSshConfig: async () => {
+    const count = await invoke<number>("export_ssh_config");
+    invoke("log_history", {
+      event: {
+        id: crypto.randomUUID(),
+        timestamp: Date.now(),
+        event_type: "host_exported",
+        message: `Exported ${count} host${count === 1 ? "" : "s"} to ~/.ssh/config`,
+      },
+    }).catch(console.error);
+    return count;
+  },
+
+  installPublicKey: async (host, publicKey) => {
+    await invoke("install_public_key", { host, publicKey });
+    invoke("log_history", {
+      event: {
+        id: crypto.randomUUID(),
+        timestamp: Date.now(),
+        event_type: "key_installed",
+        message: `Installed public key on ${host.name}`,
+        host_id: host.id || null,
+      },
+    }).catch(console.error);
+  },
+
+  processesList: (sessionId, local) =>
+    invoke<ProcessInfo[]>("processes_list", { sessionId, local }),
+  processKill: (sessionId, local, pid, signal) =>
+    invoke<void>("process_kill", { sessionId, local, pid, signal }),
+
+  aiGetConfig: () => invoke<AiConfigView | null>("ai_get_config"),
+  aiSetConfig: (config) => invoke<AiConfigView>("ai_set_config", { config }),
+  aiListModels: () => invoke<AiModelInfo[]>("ai_list_models"),
+  aiSend: (requestId, system, messages) =>
+    invoke<void>("ai_send", { requestId, system, messages }),
+  aiCancel: (requestId) => invoke<void>("ai_cancel", { requestId }),
 
   getHistory: () => invoke<HistoryEvent[]>("get_history"),
 
@@ -857,3 +1310,20 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
     });
   },
 }));
+
+// Live session snapshotter: while unlocked with restore enabled, persist the
+// tab/pane layout (debounced) so a lock, quit, or crash can rebuild it. Guarded
+// on `unlocked` so the lock reset (which empties tabs) never clobbers the saved
+// layout - the last good snapshot stays on disk until the next real change.
+let snapshotTimer: ReturnType<typeof setTimeout> | undefined;
+useVaultStore.subscribe((state) => {
+  if (!state.unlocked || !state.restoreSessionEnabled) return;
+  clearTimeout(snapshotTimer);
+  snapshotTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(SESSION_KEY, JSON.stringify(serializeSession(useVaultStore.getState())));
+    } catch {
+      /* storage full / unavailable - restore is best-effort */
+    }
+  }, 400);
+});

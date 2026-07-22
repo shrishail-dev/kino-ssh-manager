@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useVaultStore } from "./store";
+import { comboFromEvent } from "./keymap";
 import { THEMES, applyTheme } from "./themes";
 import { Sidebar } from "./components/Sidebar";
 import { Terminal } from "./components/Terminal";
@@ -7,8 +8,14 @@ import { ForwardingPanel } from "./components/ForwardingPanel";
 import { SftpModal } from "./components/SftpModal";
 import { DockerPanel } from "./components/DockerPanel";
 import { MetricsPanel } from "./components/MetricsPanel";
+import { ProcessesPanel } from "./components/ProcessesPanel";
+import { CopilotPanel } from "./components/CopilotPanel";
+import { HomePanel } from "./components/HomePanel";
+import { AiSettingsModal } from "./components/AiSettingsModal";
 import { SettingsMenu } from "./components/SettingsMenu";
 import { Unlock } from "./components/Unlock";
+import { ContextMenu, MenuItem } from "./components/ContextMenu";
+import { CommandPalette } from "./components/CommandPalette";
 import "./index.css";
 
 const SIDEBAR_MIN = 190;
@@ -21,11 +28,15 @@ function App() {
     panes,
     activePaneId,
     activeTabIds,
+    paneNames,
     closeTab,
     setActiveTab,
     splitPane,
     closePane,
     setActivePane,
+    renamePane,
+    moveTabToPane,
+    moveTabToNewSplit,
     lock,
     theme,
     idleLockMinutes,
@@ -34,10 +45,27 @@ function App() {
     startRecording,
     stopRecording,
     setRecordingState,
+    broadcastInput,
+    setBroadcastInput,
+    copilotEnabled,
+    keybindings,
+    restoreSessionEnabled,
+    restoreLastSession,
   } = useVaultStore();
   const [sftpTabId, setSftpTabId] = useState<string | null>(null);
   const [dockerTabId, setDockerTabId] = useState<string | null>(null);
   const [metricsTabId, setMetricsTabId] = useState<string | null>(null);
+  const [procTabId, setProcTabId] = useState<string | null>(null);
+  const [copilotTabId, setCopilotTabId] = useState<string | null>(null);
+  // Text handed to the Copilot to explain (from a terminal selection); one-shot.
+  const [copilotSeed, setCopilotSeed] = useState<string | null>(null);
+  const [aiSettingsOpen, setAiSettingsOpen] = useState(false);
+  const [tabMenu, setTabMenu] = useState<{ x: number; y: number; tabId: string } | null>(null);
+  // Which pane's name is being edited inline, and the working draft text.
+  const [editingPaneId, setEditingPaneId] = useState<string | null>(null);
+  const [paneNameDraft, setPaneNameDraft] = useState("");
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => localStorage.getItem("ssh-mgr:sidebar-collapsed") === "1"
   );
@@ -82,10 +110,16 @@ function App() {
     applyTheme(t);
   }, [theme]);
 
-  // Check for a newer release once the vault is unlocked (silent if offline).
+  // Check for a newer release on launch (silent if offline). Runs before unlock
+  // too - the check hits GitHub, not the vault - so the login screen can show it.
   useEffect(() => {
-    if (unlocked) checkForUpdate();
-  }, [unlocked, checkForUpdate]);
+    checkForUpdate();
+  }, [checkForUpdate]);
+
+  // Rebuild the previous tabs/panes right after unlocking, if enabled.
+  useEffect(() => {
+    if (unlocked && restoreSessionEnabled) restoreLastSession();
+  }, [unlocked, restoreSessionEnabled, restoreLastSession]);
 
   // Auto-lock the vault after a period of no user activity.
   useEffect(() => {
@@ -104,6 +138,34 @@ function App() {
     };
   }, [unlocked, idleLockMinutes, lock]);
 
+  // Global shortcuts, resolved against the (customizable) keymap.
+  useEffect(() => {
+    if (!unlocked) return;
+    const onKey = (e: KeyboardEvent) => {
+      const combo = comboFromEvent(e);
+      if (!combo) return;
+      if (combo === keybindings["command-palette"]) {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+      } else if (combo === keybindings["broadcast-toggle"]) {
+        e.preventDefault();
+        setBroadcastInput(!useVaultStore.getState().broadcastInput);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [unlocked, setBroadcastInput, keybindings]);
+
+  // Lightweight toast, fired via a window event (e.g. from the command palette).
+  useEffect(() => {
+    const onToast = (e: Event) => {
+      setToast((e as CustomEvent<string>).detail);
+      window.setTimeout(() => setToast(null), 3000);
+    };
+    window.addEventListener("kino:toast", onToast as EventListener);
+    return () => window.removeEventListener("kino:toast", onToast as EventListener);
+  }, []);
+
   if (!unlocked) {
     return <Unlock />;
   }
@@ -111,6 +173,8 @@ function App() {
   const sftpTab = tabs.find((t) => t.id === sftpTabId);
   const dockerTab = tabs.find((t) => t.id === dockerTabId);
   const metricsTab = tabs.find((t) => t.id === metricsTabId);
+  const procTab = tabs.find((t) => t.id === procTabId);
+  const copilotTab = tabs.find((t) => t.id === copilotTabId);
 
   return (
     <div className="app-root">
@@ -182,6 +246,10 @@ function App() {
                           key={tab.id}
                           className={`tab ${tab.id === activeTabId ? "active" : ""} ${!tab.connected ? "disconnected" : ""}`}
                           onClick={() => setActiveTab(tab.id)}
+                          onContextMenu={(e) => {
+                            e.preventDefault();
+                            setTabMenu({ x: e.clientX, y: e.clientY, tabId: tab.id });
+                          }}
                           style={tab.host?.color ? { borderTop: `2px solid ${tab.host.color}` } : undefined}
                         >
                           <span
@@ -250,6 +318,33 @@ function App() {
                           Metrics
                         </button>
                       )}
+                      {copilotEnabled && activeTab && activeTab.connected && (
+                        <button
+                          className="fwd-trigger"
+                          onClick={() => setCopilotTabId(activeTab.id)}
+                          title="Ask the AI copilot about this host"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M12 3l1.9 4.6 4.6 1.9-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z" />
+                            <path d="M18 15l.8 2.2 2.2.8-2.2.8L18 21l-.8-2.2-2.2-.8 2.2-.8z" />
+                          </svg>
+                          Copilot
+                        </button>
+                      )}
+                      {activeTab && activeTab.connected && (
+                        <button
+                          className="fwd-trigger"
+                          onClick={() => setProcTabId(activeTab.id)}
+                          title="View and signal processes"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="4" y="4" width="16" height="16" rx="2" />
+                            <rect x="9" y="9" width="6" height="6" />
+                            <path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2" />
+                          </svg>
+                          Processes
+                        </button>
+                      )}
                       {activeTab?.kind === "ssh" && activeTab.host && (
                         <ForwardingPanel sessionId={activeTab.sessionId} host={activeTab.host} />
                       )}
@@ -292,6 +387,50 @@ function App() {
                         </button>
                       )}
                       
+                      {panes.length > 1 && (
+                        editingPaneId === paneId ? (
+                          <input
+                            className="pane-name-input"
+                            autoFocus
+                            value={paneNameDraft}
+                            placeholder={`Pane ${index + 1}`}
+                            onChange={(e) => setPaneNameDraft(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            onBlur={() => { renamePane(paneId, paneNameDraft); setEditingPaneId(null); }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") { renamePane(paneId, paneNameDraft); setEditingPaneId(null); }
+                              if (e.key === "Escape") setEditingPaneId(null);
+                            }}
+                          />
+                        ) : (
+                          <button
+                            className="pane-name-label"
+                            title="Rename pane"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPaneNameDraft(paneNames[paneId] ?? "");
+                              setEditingPaneId(paneId);
+                            }}
+                          >
+                            {paneNames[paneId] ?? `Pane ${index + 1}`}
+                          </button>
+                        )
+                      )}
+
+                      {panes.length > 1 && (
+                        <button
+                          className={`fwd-trigger ${broadcastInput ? "active" : ""}`}
+                          onClick={() => setBroadcastInput(!broadcastInput)}
+                          title={broadcastInput ? "Broadcast input: ON - typing goes to every pane (Ctrl+Shift+B)" : "Broadcast input to all panes (Ctrl+Shift+B)"}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="2" />
+                            <path d="M16.24 7.76a6 6 0 0 1 0 8.49M7.76 16.24a6 6 0 0 1 0-8.49M19.07 4.93a10 10 0 0 1 0 14.14M4.93 19.07a10 10 0 0 1 0-14.14" />
+                          </svg>
+                          {broadcastInput ? "Broadcast" : ""}
+                        </button>
+                      )}
+
                       <button className="fwd-trigger" onClick={() => splitPane(paneId)} title="Split Right">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
@@ -309,9 +448,7 @@ function App() {
 
                   <div className="terminal-area">
                     {paneTabs.length === 0 ? (
-                      <div className="welcome" style={{ height: '100%' }}>
-                        <p style={{ color: 'var(--subtle)', fontSize: '13px' }}>Select a host to connect in this pane</p>
-                      </div>
+                      <HomePanel paneId={paneId} />
                     ) : (
                       paneTabs.map((tab) => (
                         <Terminal
@@ -319,6 +456,9 @@ function App() {
                           sessionId={tab.sessionId}
                           kind={tab.kind}
                           active={tab.id === activeTabId}
+                          tabId={tab.id}
+                          host={tab.host}
+                          onExplain={copilotEnabled ? (text) => { setCopilotSeed(text); setCopilotTabId(tab.id); } : undefined}
                         />
                       ))
                     )}
@@ -358,6 +498,49 @@ function App() {
           onClose={() => setMetricsTabId(null)}
         />
       )}
+
+      {procTab && (
+        <ProcessesPanel
+          key={procTab.id}
+          sessionId={procTab.sessionId}
+          local={procTab.kind === "local"}
+          title={procTab.title ?? (procTab.kind === "local" ? "Local Shell" : procTab.host?.name ?? "Host")}
+          onClose={() => setProcTabId(null)}
+        />
+      )}
+
+      {copilotEnabled && copilotTab && (
+        <CopilotPanel
+          key={copilotTab.id}
+          sessionId={copilotTab.sessionId}
+          host={copilotTab.host}
+          local={copilotTab.kind === "local"}
+          title={copilotTab.title ?? (copilotTab.kind === "local" ? "Local Shell" : copilotTab.host?.name ?? "Host")}
+          initialPrompt={copilotSeed}
+          onClose={() => { setCopilotTabId(null); setCopilotSeed(null); }}
+          onOpenSettings={() => { setCopilotTabId(null); setAiSettingsOpen(true); }}
+        />
+      )}
+
+      {aiSettingsOpen && <AiSettingsModal onClose={() => setAiSettingsOpen(false)} />}
+
+      {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
+
+      {toast && <div className="app-toast">{toast}</div>}
+
+      {tabMenu && (() => {
+        const tab = tabs.find((t) => t.id === tabMenu.tabId);
+        if (!tab) return null;
+        const items: MenuItem[] = [{ label: "Move to pane", header: true }];
+        panes.forEach((pid, i) => {
+          if (pid === tab.paneId) return;
+          items.push({ label: paneNames[pid] ?? `Pane ${i + 1}`, onClick: () => moveTabToPane(tab.id, pid) });
+        });
+        items.push({ label: "New split -", onClick: () => moveTabToNewSplit(tab.id) });
+        return (
+          <ContextMenu x={tabMenu.x} y={tabMenu.y} items={items} onClose={() => setTabMenu(null)} />
+        );
+      })()}
     </div>
   );
 }

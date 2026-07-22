@@ -247,6 +247,18 @@ body,
   width: auto;
 }
 
+.group-new-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.group-new-row input {
+  flex: 1;
+}
+.group-new-row .btn {
+  flex-shrink: 0;
+}
+
 .host-info {
   flex: 1;
   min-width: 0;
@@ -448,6 +460,92 @@ body,
   opacity: 0.3;
 }
 
+/* ── Favorite (pin to Home) star ────────────────────────────────── */
+.host-fav {
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.12s, color 0.12s;
+}
+.host-item:hover .host-fav { opacity: 1; }
+.host-fav:hover { color: var(--yellow); }
+/* Pinned hosts keep their star lit even when the row isn't hovered. */
+.host-fav.active { opacity: 1; color: var(--yellow); }
+
+/* ── Home panel (empty-pane landing) ────────────────────────────── */
+.home-panel {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 28px 32px;
+}
+.home-panel.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+  color: var(--subtle);
+}
+.home-panel.empty svg { opacity: 0.35; }
+.home-panel.empty .hint { max-width: 42ch; }
+.home-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--subtle);
+  margin: 0 0 14px 0;
+}
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.home-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--muted);
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.12s, background 0.12s, transform 0.06s;
+}
+.home-card:hover {
+  border-color: var(--blue);
+  background: var(--overlay);
+}
+.home-card:active { transform: translateY(1px); }
+.home-card-icon {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  background: var(--overlay);
+  color: var(--subtext);
+}
+.home-card-body { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
+.home-card-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.home-card-meta {
+  font-size: 11.5px;
+  color: var(--subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ── Tabs ───────────────────────────────────────────────────────── */
 .tab-bar {
   display: flex;
@@ -550,6 +648,37 @@ body,
   width: 100%;
   height: 100%;
   padding: 8px;
+}
+
+/* Floating tooltip shown over a terminal text selection. */
+.term-sel-menu {
+  position: absolute;
+  z-index: 6;
+  transform: translate(-50%, -100%);
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface);
+  border: 1px solid var(--muted);
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+.term-sel-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: var(--subtext);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.term-sel-btn:hover {
+  color: var(--text);
+  background: var(--overlay);
 }
 
 .term-toolbar {
@@ -1427,6 +1556,43 @@ textarea.mono {
   padding: 4px;
 }
 
+/* Right-click menu (pane routing for hosts and tabs) */
+.context-menu {
+  position: fixed;
+  z-index: 400;
+  min-width: 190px;
+  background: var(--surface);
+  border: 1px solid var(--muted);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  padding: 4px;
+}
+.context-menu-header {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 6px 10px 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.context-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 13px;
+  padding: 7px 10px;
+  border-radius: calc(var(--radius) - 2px);
+  cursor: pointer;
+}
+.context-menu-item:hover:not(:disabled) { background: var(--overlay); }
+.context-menu-item:disabled { color: var(--subtle); cursor: default; }
+
 .settings-section-label {
   font-size: 10px;
   font-weight: 700;
@@ -1566,6 +1732,38 @@ textarea.mono {
   display: flex;
   align-items: center;
   padding-right: 8px;
+}
+
+/* Editable pane name shown in the pane toolbar when more than one pane is open. */
+.pane-name-label {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--subtext);
+  cursor: pointer;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: var(--radius);
+  white-space: nowrap;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+}
+.pane-name-label:hover {
+  color: var(--text);
+  background: var(--overlay);
+  border-color: var(--muted);
+}
+.pane-name-input {
+  width: 130px;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--blue);
+  border-radius: var(--radius);
 }
 
 /* ── Forwarding panel ────────────────────────────────────────────── */
@@ -2479,6 +2677,24 @@ select:focus,
   margin-top: 16px;
 }
 
+/* "Update available" pill on the login screen. */
+.unlock-update {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 14px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--btn-primary-fg);
+  background: var(--green);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: filter 0.12s;
+}
+.unlock-update:hover { filter: brightness(1.08); }
+
 /* Port-forward kind selector + tag */
 .fwd-kind { width: auto; padding: 4px 24px 4px 8px; font-size: 11px; }
 .fwd-kind-tag {
@@ -2490,4 +2706,354 @@ select:focus,
   border-radius: 3px;
   background: var(--overlay);
   color: var(--subtle);
+}
+/* ── SSH-agent auth badge ─────────────────────────────────────────────── */
+.auth-badge.agent {
+  background: color-mix(in srgb, var(--yellow) 18%, transparent);
+  color: var(--yellow);
+}
+
+/* ── Auto-reconnect banner (Terminal) ─────────────────────────────────── */
+.term-reconnect {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  font-size: 12.5px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--yellow) 16%, var(--surface));
+  border-bottom: 1px solid color-mix(in srgb, var(--yellow) 40%, transparent);
+}
+.term-reconnect.failed {
+  background: color-mix(in srgb, var(--red) 16%, var(--surface));
+  border-bottom-color: color-mix(in srgb, var(--red) 40%, transparent);
+}
+.term-reconnect span { flex: 1; }
+
+/* ── Command palette (Cmd/Ctrl+K) ─────────────────────────────────────── */
+.palette-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 12vh;
+  z-index: 200;
+}
+.palette {
+  width: min(620px, 92vw);
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border, var(--muted));
+  border-radius: 10px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+.palette-input {
+  border: none;
+  border-bottom: 1px solid var(--muted);
+  background: transparent;
+  color: var(--text);
+  font-size: 15px;
+  padding: 14px 16px;
+  outline: none;
+}
+.palette-list { overflow-y: auto; padding: 6px; }
+.palette-group {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--subtle);
+  padding: 8px 10px 4px;
+}
+.palette-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.palette-item.active { background: var(--overlay); }
+.palette-item-title { color: var(--text); font-size: 13.5px; }
+.palette-item-sub {
+  color: var(--subtle);
+  font-size: 12px;
+  margin-left: auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 55%;
+  font-family: "JetBrains Mono", monospace;
+}
+.palette-empty { padding: 20px; text-align: center; color: var(--subtle); font-size: 13px; }
+
+/* ── Toast ────────────────────────────────────────────────────────────── */
+.app-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--muted);
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 13px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 300;
+}
+
+/* ── Process manager panel ────────────────────────────────────────────── */
+.proc-modal {
+  width: min(1000px, 96vw);
+  max-width: none;
+  height: min(680px, 90vh);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+.proc-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+}
+.proc-filter {
+  flex: 1;
+  min-width: 0;
+}
+.proc-auto {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--subtext);
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+/* The base `input` rule is width:100% - a bare checkbox would blow out the
+   label and overlap the neighbouring controls. */
+.proc-auto input[type="checkbox"] {
+  width: auto;
+  padding: 0;
+  margin: 0;
+  accent-color: var(--blue);
+}
+.proc-toolbar .settings-select,
+.proc-toolbar .btn {
+  flex-shrink: 0;
+}
+.proc-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--muted);
+  border-radius: var(--radius, 8px);
+}
+.proc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.proc-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  color: var(--subtle);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--muted);
+  z-index: 1;
+}
+.proc-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--muted) 50%, transparent);
+  color: var(--text);
+  white-space: nowrap;
+}
+.proc-table tbody tr:hover { background: var(--overlay); }
+.proc-table tr.busy { opacity: 0.5; }
+.proc-table .num { text-align: right; }
+.proc-table .hot { color: var(--red); }
+.proc-cmd {
+  max-width: 0;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--subtext);
+}
+.proc-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+/* ── AI Copilot ───────────────────────────────────────────────────────── */
+.copilot-modal,
+.ai-settings-modal {
+  width: min(860px, 96vw);
+  max-width: none;
+  height: min(720px, 92vh);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+}
+.ai-settings-modal { height: min(640px, 90vh); }
+.ai-settings-body { flex: 1; min-height: 0; overflow-y: auto; padding-right: 4px; }
+
+/* Keyboard shortcuts editor */
+.keybind-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 2px;
+}
+.keybind-label { font-size: 13px; color: var(--text); }
+.keybind-controls { display: flex; align-items: center; gap: 8px; }
+.keybind-conflict {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--red);
+  border: 1px solid var(--red);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+.keybind-combo {
+  min-width: 96px;
+  padding: 4px 10px;
+  background: var(--overlay);
+  border: 1px solid var(--muted);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+}
+.keybind-combo:hover { border-color: var(--blue); }
+.keybind-combo.recording {
+  border-color: var(--blue);
+  color: var(--blue);
+  animation: keybind-pulse 1s ease-in-out infinite;
+}
+.keybind-combo kbd {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+  background: none;
+  border: none;
+  padding: 0;
+}
+.keybind-reset { font-size: 15px; line-height: 1; padding: 2px 6px; }
+@keyframes keybind-pulse { 50% { opacity: 0.55; } }
+.ai-oauth-detail {
+  background: var(--bg);
+  border: 1px solid var(--muted);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 11.5px;
+  color: var(--subtext);
+  white-space: pre-wrap;
+  max-height: 140px;
+  overflow: auto;
+}
+
+.copilot-model-badge {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--subtle);
+  background: var(--overlay);
+  border-radius: 4px;
+  padding: 2px 8px;
+  margin-left: 10px;
+  white-space: nowrap;
+}
+
+.copilot-setup { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; padding: 24px; }
+.copilot-setup .hint { max-width: 46ch; }
+
+.copilot-thread { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 2px; display: flex; flex-direction: column; gap: 14px; }
+.copilot-empty { color: var(--subtle); font-size: 13px; text-align: center; padding: 24px 12px; }
+.copilot-quick { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 12px; }
+
+.copilot-msg { display: flex; flex-direction: column; gap: 4px; }
+.copilot-role { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--subtle); }
+.copilot-msg.user .copilot-body {
+  background: var(--overlay);
+  border-radius: 8px;
+  padding: 8px 12px;
+  align-self: flex-start;
+  max-width: 88%;
+}
+.copilot-body { font-size: 13.5px; line-height: 1.55; color: var(--text); }
+.copilot-body p { margin: 0 0 8px 0; white-space: pre-wrap; }
+.copilot-body p:last-child { margin-bottom: 0; }
+
+.copilot-thinking {
+  border-left: 2px solid var(--muted);
+  padding-left: 10px;
+  color: var(--subtle);
+  font-size: 12.5px;
+  font-style: italic;
+}
+.copilot-thinking-label { display: block; font-style: normal; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
+.copilot-thinking p { margin: 0; white-space: pre-wrap; }
+
+.copilot-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 14px;
+  background: var(--blue);
+  vertical-align: text-bottom;
+  animation: copilot-blink 1s steps(2, start) infinite;
+}
+@keyframes copilot-blink { to { visibility: hidden; } }
+
+.copilot-code { border: 1px solid var(--muted); border-radius: 8px; overflow: hidden; margin: 8px 0; }
+.copilot-code-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: var(--overlay);
+  border-bottom: 1px solid var(--muted);
+}
+.copilot-code-lang { font-size: 11px; color: var(--subtle); margin-right: auto; font-family: "JetBrains Mono", monospace; }
+.copilot-code pre {
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--bg);
+  overflow-x: auto;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text);
+  white-space: pre;
+}
+
+.copilot-input { display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 1px solid var(--muted); }
+.copilot-input textarea { width: 100%; resize: vertical; font-size: 13.5px; }
+.copilot-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.copilot-attach {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--subtext);
+  cursor: pointer;
+  width: fit-content;
+}
+/* The base `input` rule is width:100% - a bare checkbox would blow out the label. */
+.copilot-attach input[type="checkbox"] {
+  width: auto;
+  padding: 0;
+  margin: 0;
+  accent-color: var(--blue);
 }

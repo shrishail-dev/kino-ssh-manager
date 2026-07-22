@@ -8,6 +8,8 @@ import { SnippetsModal } from "./SnippetsModal";
 import { ChangePasswordModal } from "./ChangePasswordModal";
 import { AboutModal } from "./AboutModal";
 import { RecordingsModal } from "./RecordingsModal";
+import { AiSettingsModal } from "./AiSettingsModal";
+import { KeybindingsModal } from "./KeybindingsModal";
 
 interface Props {
   onLock: () => void;
@@ -24,7 +26,15 @@ export function SettingsMenu({ onLock }: Props) {
     setRelayEnabled,
     defaultRelayUrl,
     setDefaultRelayUrl,
+    copilotEnabled,
+    setCopilotEnabled,
+    restoreSessionEnabled,
+    setRestoreSessionEnabled,
+    autoReconnect,
+    setAutoReconnect,
+    exportSshConfig,
   } = useVaultStore();
+  const [exportingConfig, setExportingConfig] = useState(false);
   const [open, setOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showRecordings, setShowRecordings] = useState(false);
@@ -32,6 +42,8 @@ export function SettingsMenu({ onLock }: Props) {
   const [showSnippets, setShowSnippets] = useState(false);
   const [showChangePw, setShowChangePw] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const [showAi, setShowAi] = useState(false);
+  const [showKeys, setShowKeys] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -45,6 +57,21 @@ export function SettingsMenu({ onLock }: Props) {
   function handleLock() {
     setOpen(false);
     onLock();
+  }
+
+  async function handleExportSshConfig() {
+    setExportingConfig(true);
+    try {
+      const count = await exportSshConfig();
+      setOpen(false);
+      window.dispatchEvent(new CustomEvent("kino:toast", {
+        detail: `Wrote ${count} host${count === 1 ? "" : "s"} to ~/.ssh/config`,
+      }));
+    } catch (e) {
+      alert(`Could not write ~/.ssh/config: ${e}`);
+    } finally {
+      setExportingConfig(false);
+    }
   }
 
   return (
@@ -79,30 +106,25 @@ export function SettingsMenu({ onLock }: Props) {
               <div className="settings-divider" />
             </>
           )}
-          <p className="settings-section-label">Theme</p>
-          {THEMES.map((t) => (
-            <button
-              key={t.id}
-              className={`settings-theme-option ${t.id === themeId ? "active" : ""}`}
-              onClick={() => setTheme(t.id)}
+          <div className="settings-row">
+            <span>Theme</span>
+            <select
+              className="settings-select"
+              value={themeId}
+              onChange={(e) => setTheme(e.target.value)}
             >
-              <div className="theme-swatches">
-                <span className="swatch" style={{ background: t.ui.surface }} />
-                <span className="swatch" style={{ background: t.ui.blue }} />
-                <span className="swatch" style={{ background: t.ui.green }} />
-                <span className="swatch" style={{ background: t.ui.red }} />
-              </div>
-              <span className="settings-theme-name">
-                {t.name}
-                {!t.dark && <span className="theme-light-tag">light</span>}
-              </span>
-              {t.id === themeId && (
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              )}
-            </button>
-          ))}
+              <optgroup label="Dark">
+                {THEMES.filter((t) => t.dark).map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Light">
+                {THEMES.filter((t) => !t.dark).map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </optgroup>
+            </select>
+          </div>
 
           <div className="settings-divider" />
 
@@ -121,6 +143,18 @@ export function SettingsMenu({ onLock }: Props) {
             </select>
           </div>
           
+          <div className="settings-row">
+            <span>Auto-reconnect</span>
+            <select
+              className="settings-select"
+              value={autoReconnect ? "1" : "0"}
+              onChange={(e) => setAutoReconnect(e.target.value === "1")}
+            >
+              <option value="1">On</option>
+              <option value="0">Off</option>
+            </select>
+          </div>
+
           <div className="settings-divider" />
 
           <div className="settings-row">
@@ -149,6 +183,30 @@ export function SettingsMenu({ onLock }: Props) {
             </div>
           )}
 
+          <div className="settings-row">
+            <span>AI Copilot</span>
+            <select
+              className="settings-select"
+              value={copilotEnabled ? "1" : "0"}
+              onChange={(e) => setCopilotEnabled(e.target.value === "1")}
+            >
+              <option value="0">Off</option>
+              <option value="1">On</option>
+            </select>
+          </div>
+
+          <div className="settings-row">
+            <span>Restore session on unlock</span>
+            <select
+              className="settings-select"
+              value={restoreSessionEnabled ? "1" : "0"}
+              onChange={(e) => setRestoreSessionEnabled(e.target.value === "1")}
+            >
+              <option value="0">Off</option>
+              <option value="1">On</option>
+            </select>
+          </div>
+
           <div className="settings-divider" />
 
           <button className="settings-action" onClick={() => { setOpen(false); setShowHistory(true); }}>
@@ -167,12 +225,41 @@ export function SettingsMenu({ onLock }: Props) {
             Recordings
           </button>
 
+          {copilotEnabled && (
+            <button className="settings-action" onClick={() => { setOpen(false); setShowAi(true); }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 3l1.9 4.6 4.6 1.9-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z" />
+                <path d="M18 15l.8 2.2 2.2.8-2.2.8L18 21l-.8-2.2-2.2-.8 2.2-.8z" />
+              </svg>
+              AI Copilot
+            </button>
+          )}
+
+          <button className="settings-action" onClick={() => { setOpen(false); setShowKeys(true); }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="2" y="6" width="20" height="12" rx="2" ry="2" />
+              <line x1="6" y1="10" x2="6" y2="10" /><line x1="10" y1="10" x2="10" y2="10" />
+              <line x1="14" y1="10" x2="14" y2="10" /><line x1="18" y1="10" x2="18" y2="10" />
+              <line x1="8" y1="14" x2="16" y2="14" />
+            </svg>
+            Keyboard Shortcuts
+          </button>
+
           <button className="settings-action" onClick={() => { setOpen(false); setShowSnippets(true); }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="16 18 22 12 16 6" />
               <polyline points="8 6 2 12 8 18" />
             </svg>
             Snippets
+          </button>
+
+          <button className="settings-action" onClick={handleExportSshConfig} disabled={exportingConfig}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            {exportingConfig ? "Exporting…" : "Export to ~/.ssh/config"}
           </button>
 
           <button className="settings-action" onClick={() => { setOpen(false); setShowSync(true); }}>
@@ -218,6 +305,8 @@ export function SettingsMenu({ onLock }: Props) {
       {showSync && <SyncModal onClose={() => setShowSync(false)} />}
       {showSnippets && <SnippetsModal onClose={() => setShowSnippets(false)} />}
       {showChangePw && <ChangePasswordModal onClose={() => setShowChangePw(false)} />}
+      {showAi && <AiSettingsModal onClose={() => setShowAi(false)} />}
+      {showKeys && <KeybindingsModal onClose={() => setShowKeys(false)} />}
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
     </div>
   );

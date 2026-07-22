@@ -7,7 +7,7 @@ A secure, cross-platform SSH credential manager and terminal, built with [Tauri 
 - **Encrypted vault** - Argon2 key derivation + AES-256-GCM. One master password unlocks everything.
 - **SSH terminal** - full xterm.js terminal per host, with scrollback search (Ctrl+F) and adjustable font size (Ctrl +/-/0).
 - **Flexible auth** - store a password and/or an SSH key per host (including encrypted keys with a passphrase); import `.pem`/`.key`/`.ppk` files or generate ed25519 keypairs.
-- **Agent connection mode (optional)** - reach hosts that have **no inbound SSH port** (behind NAT, CGNAT, or a firewall) through a relay, using a companion agent that dials out. Off by default; enable it under Settings → Kino Agent. See [Agent connection mode](#agent-connection-mode).
+- **Agent connection mode (optional)** - reach hosts that have **no inbound SSH port** (behind NAT, CGNAT, or a firewall) through a relay, using a companion agent that dials out. Off by default; enable it under Settings - Kino Agent. See [Agent connection mode](#agent-connection-mode).
 - **Port forwarding** - per-host local tunnels you can start/stop per session.
 - **Encrypted profile sharing** - export a host as a password-encrypted `.sshm` file (Argon2 + AES-256-GCM) to share it safely; the recipient needs only the password to import it.
 - **SFTP file browser** - browse, upload, download (with progress bars), rename, delete, new folder, and chmod.
@@ -33,7 +33,7 @@ opening any inbound port:
   relay only moves bytes and never sees your credentials, and the host's SSH key
   is still verified (pinned per agent id).
 
-Enable the feature under **Settings → Kino Agent** (it is off by default). See the
+Enable the feature under **Settings - Kino Agent** (it is off by default). See the
 [kino-agent](https://github.com/Samarthegde/kino-agent) and
 [kino-relay](https://github.com/Samarthegde/kino-relay) repositories for
 installation and self-hosting.

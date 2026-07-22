@@ -6,7 +6,7 @@ Kino SSH Manager stores SSH credentials, so security is a first-class concern. T
 
 **Please do not open a public issue for security vulnerabilities.**
 
-Use GitHub's private vulnerability reporting: go to the repository's **Security** tab → **Report a vulnerability**. Include details and, if possible, a proof of concept. We aim to acknowledge reports within a few days and will coordinate a fix and disclosure timeline with you. Please give us reasonable time to address the issue before any public disclosure.
+Use GitHub's private vulnerability reporting: go to the repository's **Security** tab - **Report a vulnerability**. Include details and, if possible, a proof of concept. We aim to acknowledge reports within a few days and will coordinate a fix and disclosure timeline with you. Please give us reasonable time to address the issue before any public disclosure.
 
 ## How the vault works
 

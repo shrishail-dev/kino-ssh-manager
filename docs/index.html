@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Kino SSH Manager - Encrypted SSH credentials & terminal</title>
-  <meta name="description" content="A secure, cross-platform SSH credential manager and terminal. Your secrets live in a single encrypted vault on your machine and never leave the device - and agent mode reaches hosts behind NAT with no inbound port." />
+  <meta name="description" content="A secure, cross-platform SSH credential manager and terminal. Your secrets live in a single encrypted vault on your machine and never leave the device - with SFTP, tunnels, Docker, an AI copilot, and fully themeable, customizable terminals." />
 
   <meta property="og:title" content="Kino SSH Manager" />
-  <meta property="og:description" content="Secure, cross-platform SSH credential manager and terminal. Encrypted vault, SFTP, tunnels, Docker, and agent mode for hosts behind NAT - built with Rust + Tauri." />
+  <meta property="og:description" content="Secure, cross-platform SSH credential manager and terminal. Encrypted vault, SFTP, tunnels, Docker, an AI copilot, and themeable terminals - built with Rust + Tauri." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://samarthegde.github.io/kino-ssh-manager/" />
   <meta property="og:image" content="https://samarthegde.github.io/kino-ssh-manager/social-preview.png" />
@@ -235,7 +235,6 @@
       <a class="brand" href="#"><img class="mark" src="icon.png" alt="" /> Kino SSH Manager</a>
       <nav class="nav-links">
         <a class="lnk" href="#features">Features</a>
-        <a class="lnk" href="#agent">Agent mode</a>
         <a class="lnk" href="#security">Security</a>
         <a class="lnk" href="#stack">Stack</a>
         <a class="nav-gh" href="https://github.com/Samarthegde/kino-ssh-manager">
@@ -250,7 +249,7 @@
   <section class="hero">
     <div class="wrap">
       <div class="hero-inner">
-        <span class="pill"><span class="tag">v0.5</span> New: agent mode - reach hosts behind NAT</span>
+        <span class="pill"><span class="tag">v0.6</span> New: AI copilot, more themes &amp; customizable shortcuts</span>
         <h1>Manage every SSH host<br><span class="soft">without trusting the cloud.</span></h1>
         <p class="lead">
           A cross-platform credential manager and terminal. Your hosts, keys, and passwords
@@ -287,9 +286,9 @@
               <div class="side-label" style="margin-top:14px">Staging</div>
               <div class="host"><span class="led" style="background:#4ade80"></span> staging-app <span class="meta">22</span></div>
               <div class="host"><span class="led" style="background:#fbbf24"></span> ci-runner <span class="meta">2222</span></div>
-              <div class="side-label" style="margin-top:14px">Behind NAT</div>
-              <div class="host"><span class="led" style="background:#60a5fa"></span> homelab-nas <span class="meta">agent</span></div>
-              <div class="host"><span class="led" style="background:#a78bfa"></span> office-pi <span class="meta">agent</span></div>
+              <div class="side-label" style="margin-top:14px">Homelab</div>
+              <div class="host"><span class="led" style="background:#60a5fa"></span> homelab-nas <span class="meta">22</span></div>
+              <div class="host"><span class="led" style="background:#a78bfa"></span> office-pi <span class="meta">22</span></div>
             </aside>
             <div class="pane">
               <div class="pane-bar">
@@ -299,8 +298,8 @@
               <div class="term mono">
                 <div><span class="g">vault</span> <span class="d">unlocked</span></div>
                 <div><span class="g">~ $</span> <span class="w">connect prod-web-01</span></div>
-                <div class="d">→ tunnel localhost:5432 → db:5432 <span class="g">up</span></div>
-                <div class="d">→ snippet "system status" auto-run</div>
+                <div class="d">- tunnel localhost:5432 - db:5432 <span class="g">up</span></div>
+                <div class="d">- snippet "system status" auto-run</div>
                 <div><span class="b">root@prod-web-01</span><span class="d">:</span><span class="b">~</span># uptime</div>
                 <div>15:42:09 up 84 days, load 0.07 0.04 0.01</div>
                 <div><span class="b">root@prod-web-01</span><span class="d">:</span><span class="b">~</span># <span class="caret"></span></div>
@@ -355,7 +354,7 @@
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h8M16 18h4" stroke-linecap="round"/><circle cx="16" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="14" cy="18" r="2"/></svg></div>
-          <h3>Quality of life</h3><p>Idle auto-lock, host search, per-host accent colors, themes, connection history, and session logging.</p>
+          <h3>Quality of life</h3><p>Idle auto-lock, host search, per-host accent colors, 14 themes, split-pane naming, connection history, and session logging.</p>
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-7" stroke-linecap="round" stroke-linejoin="round"/><path d="M18.5 2.5a2.1 2.1 0 013 3L13 14l-4 1 1-4 8.5-8.5z" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
@@ -371,50 +370,32 @@
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12a7 7 0 0114 0" stroke-linecap="round"/><path d="M2 12a10 10 0 0120 0" stroke-linecap="round"/><circle cx="12" cy="17" r="2.2"/><path d="M12 19.2V22" stroke-linecap="round"/></svg></div>
-          <h3>Agent mode <span style="color:var(--accent-2);font-size:0.72rem;font-weight:600;">NEW</span></h3><p>Reach hosts with <em>no inbound port</em> - behind NAT, CGNAT or a firewall - through a relay you control. The agent dials out; nothing is exposed.</p>
+          <h3>Agent mode</h3><p>Optionally reach hosts with <em>no inbound port</em> - behind NAT, CGNAT or a firewall - through a relay you control. The agent dials out; nothing is exposed. Off by default.</p>
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke-linejoin="round"/><path d="M14 2v6h6" stroke-linejoin="round"/><circle cx="12" cy="14" r="2"/><path d="M12 16v2.5" stroke-linecap="round"/></svg></div>
-          <h3>Encrypted profile sharing <span style="color:var(--accent-2);font-size:0.72rem;font-weight:600;">NEW</span></h3><p>Export a host as a password-encrypted file (Argon2 + AES-256-GCM). Share it safely - the recipient needs only the password to import it.</p>
+          <h3>Encrypted profile sharing</h3><p>Export a host as a password-encrypted file (Argon2 + AES-256-GCM). Share it safely - the recipient needs only the password to import it.</p>
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 16l4-6 3.5 4L14 7l3 5 4-7" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 20h18" stroke-linecap="round"/></svg></div>
           <h3>Live system metrics</h3><p>A streaming dashboard - CPU, memory, disk, load average, uptime and network throughput - sampled once a second, for remote hosts and your own machine.</p>
         </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- AGENT MODE -->
-  <section id="agent">
-    <div class="wrap sec-grid">
-      <div>
-        <span class="eyebrow">New in v0.5</span>
-        <h2>Reach hosts that expose nothing</h2>
-        <p style="color: var(--subtext); font-size: 1.02rem; margin: -12px 0 26px;">
-          A homelab box behind NAT. A laptop on café Wi-Fi. A VM with SSH firewalled off.
-          Agent mode reaches all of them without opening a single inbound port.
-        </p>
-        <ul class="slist">
-          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="t"><b>The agent dials out.</b> A tiny companion process on the target machine opens an outbound connection to a relay you run. No port forwarding, no firewall holes, no public IP.</span></li>
-          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="t"><b>The relay only moves bytes.</b> Your SSH session stays end-to-end encrypted between the terminal and the host's <span class="mono">sshd</span> - the relay never sees credentials or keystrokes.</span></li>
-          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="t"><b>Host keys still verified.</b> Each agent host's SSH fingerprint is pinned independently, so a swapped backend is caught exactly like a classic <span class="mono">known_hosts</span> mismatch.</span></li>
-          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="t"><b>Entirely opt-in.</b> Off by default. Turn it on in Settings, and self-host the relay and agent - both are open source and MIT licensed.</span></li>
-        </ul>
-        <div class="cta-row" style="justify-content: flex-start; margin-top: 30px;">
-          <a class="btn btn-ghost" href="https://github.com/Samarthegde/kino-agent">kino-agent</a>
-          <a class="btn btn-ghost" href="https://github.com/Samarthegde/kino-relay">kino-relay</a>
+        <div class="feat">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 4.6 4.6 1.9-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z" stroke-linejoin="round"/><path d="M18 15l.8 2.2 2.2.8-2.2.8L18 21l-.8-2.2-2.2-.8 2.2-.8z" stroke-linejoin="round"/></svg></div>
+          <h3>AI copilot <span style="color:var(--accent-2);font-size:0.72rem;font-weight:600;">NEW</span></h3><p>An opt-in, bring-your-own-key assistant in the terminal, powered by OpenRouter. Ask about a host, explain an error, or select output and send it straight to the copilot. Your key stays encrypted in the vault.</p>
         </div>
-      </div>
-      <div class="spec">
-        <div class="sh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12a7 7 0 0114 0" stroke-linecap="round"/><path d="M2 12a10 10 0 0120 0" stroke-linecap="round"/><circle cx="12" cy="17" r="2.2"/></svg> The connection path</div>
-        <div class="row"><span class="k">manager</span><span class="v">→ wss → relay</span></div>
-        <div class="row"><span class="k">agent</span><span class="v">→ wss → relay</span></div>
-        <div class="row"><span class="k">agent → host</span><span class="v">127.0.0.1:22</span></div>
-        <div class="row"><span class="k">inbound ports opened</span><span class="v">none</span></div>
-        <div class="row"><span class="k">ssh session</span><span class="v">end-to-end</span></div>
-        <div class="row"><span class="k">relay sees</span><span class="v">ciphertext only</span></div>
-        <div class="row"><span class="k">runs on</span><span class="v">Linux · Windows</span></div>
+        <div class="feat">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h3>Customizable shortcuts <span style="color:var(--accent-2);font-size:0.72rem;font-weight:600;">NEW</span></h3><p>Rebind the command palette, terminal find, copy, paste and font shortcuts to whatever fits your muscle memory - with live conflict detection and per-action reset.</p>
+        </div>
+        <div class="feat">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9 9 9 0 00-6.4 2.6L3 8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 3v5h5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h3>Session restore <span style="color:var(--accent-2);font-size:0.72rem;font-weight:600;">NEW</span></h3><p>Optionally remember your open tabs and pane layout and rebuild them on unlock, reconnecting each host into its original pane - pick up right where you left off.</p>
+        </div>
+        <div class="feat">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01L12 2z" stroke-linejoin="round"/></svg></div>
+          <h3>Home favorites <span style="color:var(--accent-2);font-size:0.72rem;font-weight:600;">NEW</span></h3><p>Pin the hosts you use most to a home panel of one-click connect cards, shown whenever a pane is empty. Star a host in the sidebar to add it.</p>
+        </div>
       </div>
     </div>
   </section>

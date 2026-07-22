@@ -64,6 +64,18 @@ pub struct Host {
     /// Relay URL if connection_mode is "agent"
     #[serde(default)]
     pub relay_url: Option<String>,
+    /// Optional proxy to dial the SSH host through: "socks5" or "http" (CONNECT).
+    /// None / empty means connect directly.
+    #[serde(default)]
+    pub proxy_type: Option<String>,
+    #[serde(default)]
+    pub proxy_host: Option<String>,
+    #[serde(default)]
+    pub proxy_port: Option<u16>,
+    #[serde(default)]
+    pub proxy_username: Option<String>,
+    #[serde(default)]
+    pub proxy_password: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -217,6 +229,11 @@ mod tests {
             connection_mode: None,
             agent_id: None,
             relay_url: None,
+            proxy_type: None,
+            proxy_host: None,
+            proxy_port: None,
+            proxy_username: None,
+            proxy_password: None,
         }]
     }
 

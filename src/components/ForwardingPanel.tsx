@@ -81,8 +81,8 @@ export function ForwardingPanel({ sessionId, host }: Props) {
                     {(fwd.kind ?? "local") === "socks"
                       ? `SOCKS5 · localhost:${fwd.local_port}`
                       : (fwd.kind ?? "local") === "remote"
-                        ? `${fwd.bind_host || "127.0.0.1"}:${fwd.remote_port} → ${fwd.remote_host}:${fwd.local_port}`
-                        : `localhost:${fwd.local_port} → ${fwd.remote_host}:${fwd.remote_port}`}
+                        ? `${fwd.bind_host || "127.0.0.1"}:${fwd.remote_port} - ${fwd.remote_host}:${fwd.local_port}`
+                        : `localhost:${fwd.local_port} - ${fwd.remote_host}:${fwd.remote_port}`}
                   </span>
                 </div>
                 <button
