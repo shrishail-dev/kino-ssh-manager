@@ -1,6 +1,7 @@
 mod ai;
 mod docker;
 mod forwarding;
+mod health;
 mod history;
 mod host_keys;
 mod keygen;
@@ -1391,6 +1392,10 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        // In-app updates: the updater downloads/installs a signed release and
+        // `process` provides the relaunch afterwards. Desktop only.
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .manage(state)
         .invoke_handler(tauri::generate_handler![
             vault_exists,
@@ -1461,6 +1466,7 @@ pub fn run() {
             metrics::metrics_stop,
             processes::processes_list,
             processes::process_kill,
+            health::check_hosts_health,
             ai::ai_get_config,
             ai::ai_set_config,
             ai::ai_list_models,
@@ -1507,6 +1513,8 @@ mod export_tests {
             proxy_port: None,
             proxy_username: None,
             proxy_password: None,
+            jump_host: None,
+            jump: None,
         }
     }
 

@@ -47,7 +47,11 @@ export function HostForm({ host, onClose }: Props) {
   // Whether the group field is in "type a new name" mode vs. picking an existing one.
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [os, setOs] = useState(host?.os ?? "");
+  const [jumpHost, setJumpHost] = useState(host?.jump_host ?? "");
   const [connectionMode, setConnectionMode] = useState(host?.connection_mode ?? "direct");
+
+  // Candidate bastions: every other saved host (a host can't jump through itself).
+  const jumpCandidates = hosts.filter((h) => h.id && h.id !== host?.id);
   const [agentId, setAgentId] = useState(host?.agent_id ?? "");
   const [relayUrl, setRelayUrl] = useState(host?.relay_url ?? useVaultStore.getState().defaultRelayUrl);
 
@@ -222,6 +226,7 @@ export function HostForm({ host, onClose }: Props) {
         connection_mode: connectionMode,
         agent_id: agentId || null,
         relay_url: relayUrl || null,
+        jump_host: connectionMode === "direct" && jumpHost ? jumpHost : null,
         proxy_type: connectionMode === "direct" && proxyType ? proxyType : null,
         proxy_host: connectionMode === "direct" && proxyType ? proxyHost || null : null,
         proxy_port: connectionMode === "direct" && proxyType ? proxyPort : null,
@@ -771,6 +776,31 @@ export function HostForm({ host, onClose }: Props) {
                     </select>
                   </div>
                 </div>
+
+                {connectionMode === "direct" && (
+                  <div className="form-row">
+                    <label>Jump host / bastion <span className="hint-inline">(optional - tunnel through another host)</span></label>
+                    <select
+                      className="settings-select"
+                      value={jumpCandidates.some((h) => h.id === jumpHost) ? jumpHost : ""}
+                      onChange={(e) => setJumpHost(e.target.value)}
+                    >
+                      <option value="">None (connect directly)</option>
+                      {jumpCandidates.map((h) => (
+                        <option key={h.id} value={h.id}>
+                          {h.name} ({h.username}@{h.hostname})
+                        </option>
+                      ))}
+                    </select>
+                    {jumpHost && (
+                      <p className="hint">
+                        kino opens an SSH session to the bastion, then tunnels to this host through it
+                        (like <span className="mono">ssh -J</span>). Each hop's host key is verified
+                        independently. Bastions may themselves have a jump host, forming a chain.
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {connectionMode === "direct" && (
                   <div className="form-section">

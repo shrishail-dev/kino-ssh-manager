@@ -30,6 +30,8 @@ export function SettingsMenu({ onLock }: Props) {
     setCopilotEnabled,
     restoreSessionEnabled,
     setRestoreSessionEnabled,
+    healthIntervalSec,
+    setHealthIntervalSec,
     autoReconnect,
     setAutoReconnect,
     exportSshConfig,
@@ -192,6 +194,21 @@ export function SettingsMenu({ onLock }: Props) {
             >
               <option value="0">Off</option>
               <option value="1">On</option>
+            </select>
+          </div>
+
+          <div className="settings-row">
+            <span>Host health checks</span>
+            <select
+              className="settings-select"
+              value={healthIntervalSec}
+              onChange={(e) => setHealthIntervalSec(Number(e.target.value))}
+              title="Periodically test whether each host's SSH port is reachable"
+            >
+              <option value={0}>Off</option>
+              <option value={30}>Every 30s</option>
+              <option value={60}>Every 1 min</option>
+              <option value={300}>Every 5 min</option>
             </select>
           </div>
 

@@ -97,6 +97,8 @@ fn block_to_hosts(block: &Block, default_user: Option<&str>) -> Vec<Host> {
             proxy_port: None,
             proxy_username: None,
             proxy_password: None,
+            jump_host: None,
+            jump: None,
         });
     }
     out

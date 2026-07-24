@@ -179,6 +179,8 @@ mod tests {
             proxy_port: None,
             proxy_username: None,
             proxy_password: None,
+            jump_host: None,
+            jump: None,
         }
     }
 

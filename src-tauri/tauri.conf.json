@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Kino SSH Manager",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "identifier": "com.kino.ssh-manager",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -26,6 +26,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -33,5 +34,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/Samarthegde/kino-ssh-manager/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEU0MTdGM0Q5RDREOUM0RTEKUldUaHhOblUyZk1YNUxCSHFpOUtmMUNibFRtRU1Cb0JremlYaXJlR29JekhDa2EvT2ZyQ2JmNjQK"
+    }
   }
 }

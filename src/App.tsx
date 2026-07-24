@@ -51,6 +51,8 @@ function App() {
     keybindings,
     restoreSessionEnabled,
     restoreLastSession,
+    healthIntervalSec,
+    checkHostsHealth,
   } = useVaultStore();
   const [sftpTabId, setSftpTabId] = useState<string | null>(null);
   const [dockerTabId, setDockerTabId] = useState<string | null>(null);
@@ -120,6 +122,14 @@ function App() {
   useEffect(() => {
     if (unlocked && restoreSessionEnabled) restoreLastSession();
   }, [unlocked, restoreSessionEnabled, restoreLastSession]);
+
+  // Poll host reachability on the configured interval (0 = off).
+  useEffect(() => {
+    if (!unlocked || healthIntervalSec <= 0) return;
+    checkHostsHealth();
+    const timer = window.setInterval(checkHostsHealth, healthIntervalSec * 1000);
+    return () => window.clearInterval(timer);
+  }, [unlocked, healthIntervalSec, checkHostsHealth]);
 
   // Auto-lock the vault after a period of no user activity.
   useEffect(() => {

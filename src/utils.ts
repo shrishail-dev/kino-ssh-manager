@@ -8,6 +8,14 @@ export function generatePassword(length = 20): string {
   return Array.from(bytes, (b) => PASSWORD_CHARS[b % PASSWORD_CHARS.length]).join("");
 }
 
+/**
+ * Show a transient toast in the app shell. Fires the `kino:toast` window event
+ * that App listens for, so any component can report without prop-drilling.
+ */
+export function toast(message: string): void {
+  window.dispatchEvent(new CustomEvent("kino:toast", { detail: message }));
+}
+
 /** Filesystem-safe stem for a host name, used as the default export filename. */
 export function slug(name: string): string {
   return name.replace(/[^a-z0-9]/gi, "_").toLowerCase();

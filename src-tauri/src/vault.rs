@@ -76,6 +76,14 @@ pub struct Host {
     pub proxy_username: Option<String>,
     #[serde(default)]
     pub proxy_password: Option<String>,
+    /// Id of another vault host to tunnel through (SSH ProxyJump / bastion).
+    /// None means connect directly. Persisted; the resolved hop travels in `jump`.
+    #[serde(default)]
+    pub jump_host: Option<String>,
+    /// Transient: the resolved jump host (with its own nested `jump` for a chain),
+    /// attached by the frontend at connect time. Not part of the saved config.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub jump: Option<Box<Host>>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -234,6 +242,8 @@ mod tests {
             proxy_port: None,
             proxy_username: None,
             proxy_password: None,
+            jump_host: None,
+            jump: None,
         }]
     }
 

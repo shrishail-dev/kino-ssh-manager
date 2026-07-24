@@ -47,6 +47,10 @@ export interface Host {
   proxy_port?: number | null;
   proxy_username?: string | null;
   proxy_password?: string | null;
+  /** Id of another vault host to tunnel through (SSH ProxyJump / bastion). */
+  jump_host?: string | null;
+  /** Resolved jump host, attached only at connect time (never persisted). */
+  jump?: Host | null;
 }
 
 export interface Snippet {
@@ -154,6 +158,17 @@ export interface AiConfigInput {
   effort?: string;
 }
 
+export type HostHealthStatus = "up" | "down" | "unknown";
+
+export interface HostHealth {
+  id: string;
+  status: HostHealthStatus;
+  /** TCP round-trip in ms; present only when up. */
+  latency_ms?: number | null;
+  /** Why it's down, or why it wasn't probed. */
+  detail?: string | null;
+}
+
 export interface AiModelInfo {
   id: string;
   label: string;
@@ -246,6 +261,10 @@ interface VaultStore {
   restoreSessionEnabled: boolean;
   /** Host ids pinned to the home panel (empty-pane landing view). */
   favoriteHostIds: string[];
+  /** Latest reachability probe per host id. Empty until the first sweep. */
+  hostHealth: Record<string, HostHealth>;
+  /** Seconds between health sweeps; 0 disables the poll entirely. */
+  healthIntervalSec: number;
   /** When true, dropped SSH sessions auto-reconnect with exponential backoff. */
   autoReconnect: boolean;
   /** When true, keystrokes in the focused terminal fan out to every visible pane. */
@@ -269,6 +288,9 @@ interface VaultStore {
   restoreLastSession: () => Promise<void>;
   /** Pin/unpin a host from the home panel. */
   toggleFavoriteHost: (id: string) => void;
+  setHealthIntervalSec: (seconds: number) => void;
+  /** Probe every host once and merge the results into `hostHealth`. */
+  checkHostsHealth: () => Promise<void>;
   setAutoReconnect: (on: boolean) => void;
   setBroadcastInput: (on: boolean) => void;
   /** Re-establish a dropped SSH tab in place (new session id, same tab). */
@@ -418,6 +440,29 @@ function initialFavorites(): string[] {
   }
 }
 
+// Host health polling is opt-in: each sweep opens a short-lived TCP connection
+// to every host, which shows up in server logs. 0 means off.
+const HEALTH_INTERVAL_KEY = "ssh-mgr:health-interval";
+function initialHealthInterval(): number {
+  const n = Number(localStorage.getItem(HEALTH_INTERVAL_KEY));
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+/**
+ * Attach the resolved jump-host chain so the backend can tunnel through it. A
+ * host references its bastion by id (`jump_host`); this walks the chain against
+ * the vault and embeds each hop in `jump`. Cycles and dead references terminate
+ * the chain safely. Returns a shallow copy - the stored host keeps only the id.
+ */
+function withResolvedJump(host: Host, all: Host[], seen: Set<string> = new Set()): Host {
+  const jumpId = host.jump_host?.trim();
+  if (!jumpId || seen.has(host.id)) return { ...host, jump: null };
+  seen.add(host.id);
+  const jumpHost = all.find((h) => h.id === jumpId);
+  if (!jumpHost || seen.has(jumpHost.id)) return { ...host, jump: null };
+  return { ...host, jump: withResolvedJump(jumpHost, all, seen) };
+}
+
 // Session restore: remember the open tabs/panes so unlocking can rebuild them.
 // Only reconnectable tabs are stored (local shells and SSH tabs backed by a
 // vault host); the layout references hosts by id, so nothing is meaningful
@@ -498,6 +543,8 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
   keybindings: resolveKeybindings(),
   restoreSessionEnabled: initialRestoreEnabled(),
   favoriteHostIds: initialFavorites(),
+  hostHealth: {},
+  healthIntervalSec: initialHealthInterval(),
   // Auto-reconnect defaults on; broadcast is a transient per-run toggle (off).
   autoReconnect: localStorage.getItem("ssh-mgr:auto-reconnect") !== "0",
   broadcastInput: false,
@@ -557,6 +604,27 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
     // Turning it off drops the stored layout so nothing lingers on disk.
     if (!on) localStorage.removeItem(SESSION_KEY);
     set({ restoreSessionEnabled: on });
+  },
+
+  setHealthIntervalSec: (seconds) => {
+    localStorage.setItem(HEALTH_INTERVAL_KEY, String(seconds));
+    // Turning the poll off clears stale dots rather than freezing them.
+    set(seconds > 0 ? { healthIntervalSec: seconds } : { healthIntervalSec: 0, hostHealth: {} });
+  },
+
+  checkHostsHealth: async () => {
+    const hosts = get().hosts;
+    if (hosts.length === 0) return;
+    try {
+      const results = await invoke<HostHealth[]>("check_hosts_health", { hosts });
+      set((state) => {
+        const next = { ...state.hostHealth };
+        for (const r of results) next[r.id] = r;
+        return { hostHealth: next };
+      });
+    } catch {
+      /* transient - keep the previous readings rather than blanking the list */
+    }
   },
 
   toggleFavoriteHost: (id) => set((state) => {
@@ -627,7 +695,7 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
   reconnectTab: async (tabId) => {
     const tab = get().tabs.find((t) => t.id === tabId);
     if (!tab || tab.kind !== "ssh" || !tab.host) throw new Error("Not a reconnectable host");
-    const newSessionId = await invoke<string>("ssh_connect", { host: tab.host });
+    const newSessionId = await invoke<string>("ssh_connect", { host: withResolvedJump(tab.host, get().hosts) });
     // Retire the old session's output buffer so the fresh view starts clean.
     clearTerminalOutput(tab.sessionId);
     invoke("log_history", {
@@ -749,7 +817,7 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
     get().tabs.forEach((t) =>
       invoke("ssh_disconnect", { sessionId: t.sessionId }).catch(() => {})
     );
-    set({ unlocked: false, hosts: [], tabs: [], panes: ["default"], activePaneId: "default", paneNames: {}, activeTabIds: { "default": null } });
+    set({ unlocked: false, hosts: [], tabs: [], panes: ["default"], activePaneId: "default", paneNames: {}, activeTabIds: { "default": null }, hostHealth: {} });
   },
 
   saveHost: async (host) => {
@@ -803,7 +871,7 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
   },
 
   connectToHost: async (host) => {
-    const sessionId = await invoke<string>("ssh_connect", { host });
+    const sessionId = await invoke<string>("ssh_connect", { host: withResolvedJump(host, get().hosts) });
     const tabId = crypto.randomUUID();
     
     invoke("log_history", {

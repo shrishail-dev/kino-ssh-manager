@@ -11,6 +11,7 @@ import { Terminal as XTerm } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import { Host, Tab, useVaultStore } from "../store";
 import { comboFromEvent } from "../keymap";
+import { toast } from "../utils";
 import { THEMES } from "../themes";
 import { appendTerminalOutput, getTerminalOutput } from "../terminalBuffer";
 import { registerTerminal, unregisterTerminal } from "../terminalRegistry";
@@ -28,6 +29,15 @@ interface Props {
 
 /** Max consecutive auto-reconnect attempts before giving up. */
 const MAX_RECONNECT_ATTEMPTS = 6;
+
+/** "Copied 3 lines" / "Copied 42 characters" - enough to confirm what landed. */
+function amount(text: string): string {
+  const lines = text.split("\n").length;
+  if (lines > 1) return `${lines} lines`;
+  return `${text.length} character${text.length === 1 ? "" : "s"}`;
+}
+const copiedLabel = (text: string) => `Copied ${amount(text)}`;
+const pastedLabel = (text: string) => `Pasted ${amount(text)}`;
 
 export function Terminal({ sessionId, kind, active, tabId, host, onExplain }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -152,7 +162,12 @@ export function Terminal({ sessionId, kind, active, tabId, host, onExplain }: Pr
       if (payload === "?") return false;
       try {
         const bytes = Uint8Array.from(atob(payload), (c) => c.charCodeAt(0));
-        navigator.clipboard.writeText(new TextDecoder().decode(bytes)).catch(() => {});
+        const text = new TextDecoder().decode(bytes);
+        navigator.clipboard
+          .writeText(text)
+          // The remote wrote the clipboard with no visible sign - say so.
+          .then(() => toast(`${copiedLabel(text)} (from the remote host)`))
+          .catch(() => {});
       } catch {
         return false; // not valid base64 - let the default handler have it
       }
@@ -202,11 +217,24 @@ export function Terminal({ sessionId, kind, active, tabId, host, onExplain }: Pr
       switch (combo) {
         case kb["term-copy"]: {
           const sel = term.getSelection();
-          if (sel) { navigator.clipboard.writeText(sel).catch(() => {}); term.clearSelection(); }
+          if (sel) {
+            navigator.clipboard
+              .writeText(sel)
+              .then(() => toast(copiedLabel(sel)))
+              .catch(() => toast("Couldn't copy to clipboard"));
+            term.clearSelection();
+          }
           return swallow();
         }
         case kb["term-paste"]:
-          navigator.clipboard.readText().then((t) => t && term.paste(t)).catch(() => {});
+          navigator.clipboard
+            .readText()
+            .then((t) => {
+              if (!t) return;
+              term.paste(t);
+              toast(pastedLabel(t));
+            })
+            .catch(() => toast("Couldn't read the clipboard"));
           return swallow();
         case kb["term-find"]:
           setSearchOpen(true);
@@ -339,7 +367,13 @@ export function Terminal({ sessionId, kind, active, tabId, host, onExplain }: Pr
   }
 
   function copySelection() {
-    if (selMenu) navigator.clipboard.writeText(selMenu.text).catch(() => {});
+    if (selMenu) {
+      const text = selMenu.text;
+      navigator.clipboard
+        .writeText(text)
+        .then(() => toast(copiedLabel(text)))
+        .catch(() => toast("Couldn't copy to clipboard"));
+    }
     termRef.current?.clearSelection();
     setSelMenu(null);
   }

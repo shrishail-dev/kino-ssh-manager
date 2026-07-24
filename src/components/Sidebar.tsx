@@ -13,7 +13,7 @@ type HostKeyPrompt = { host: Host; verdict: Extract<HostKeyVerdict, { status: "n
 
 export function Sidebar({ width }: { width: number }) {
   const { hosts, connectToHost, deleteHost, importHostFromFile, importSshConfig, profileIsEncrypted, verifyHostKey, trustHostKey, getHistory, openLocalShell,
-    panes, activePaneId, setActivePane, splitPane, favoriteHostIds, toggleFavoriteHost } =
+    panes, activePaneId, setActivePane, splitPane, favoriteHostIds, toggleFavoriteHost, hostHealth } =
     useVaultStore();
   const [importingConfig, setImportingConfig] = useState(false);
   /** Path of an encrypted profile waiting on its password. */
@@ -373,6 +373,19 @@ export function Sidebar({ width }: { width: number }) {
                       <span className={`auth-badge ${authClass(host)}`}>
                         {authLabel(host)}
                       </span>
+                      {hostHealth[host.id] && (
+                        <span
+                          className={`health-badge ${hostHealth[host.id].status}`}
+                          title={hostHealth[host.id].detail ?? "Reachable"}
+                        >
+                          <span className="health-dot" />
+                          {hostHealth[host.id].status === "up"
+                            ? `${hostHealth[host.id].latency_ms} ms`
+                            : hostHealth[host.id].status === "down"
+                              ? "unreachable"
+                              : "unknown"}
+                        </span>
+                      )}
                     </div>
                     <button
                       className={`icon-btn host-fav ${favoriteHostIds.includes(host.id) ? "active" : ""}`}

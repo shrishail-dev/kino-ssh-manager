@@ -20,6 +20,17 @@ use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 pub enum NetStream {
     Tcp(tokio::net::TcpStream),
     Duplex(tokio::io::DuplexStream),
+    /// A direct-tcpip channel tunneled through a jump/bastion host. The boxed
+    /// `JumpStream` keeps the bastion's SSH handle alive for the tunnel's life.
+    Jump(Box<JumpStream>),
+}
+
+/// The transport for a jump-host connection: an SSH channel from the bastion to
+/// the target, plus the bastion handle that must outlive it.
+pub struct JumpStream {
+    inner: russh::ChannelStream<client::Msg>,
+    /// Kept solely so the bastion connection isn't dropped while in use.
+    _jump: Arc<client::Handle<ClientHandler>>,
 }
 
 impl AsyncRead for NetStream {
@@ -31,6 +42,7 @@ impl AsyncRead for NetStream {
         match self.get_mut() {
             NetStream::Tcp(s) => Pin::new(s).poll_read(cx, buf),
             NetStream::Duplex(s) => Pin::new(s).poll_read(cx, buf),
+            NetStream::Jump(s) => Pin::new(&mut s.inner).poll_read(cx, buf),
         }
     }
 }
@@ -44,18 +56,21 @@ impl AsyncWrite for NetStream {
         match self.get_mut() {
             NetStream::Tcp(s) => Pin::new(s).poll_write(cx, buf),
             NetStream::Duplex(s) => Pin::new(s).poll_write(cx, buf),
+            NetStream::Jump(s) => Pin::new(&mut s.inner).poll_write(cx, buf),
         }
     }
     fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<std::io::Result<()>> {
         match self.get_mut() {
             NetStream::Tcp(s) => Pin::new(s).poll_flush(cx),
             NetStream::Duplex(s) => Pin::new(s).poll_flush(cx),
+            NetStream::Jump(s) => Pin::new(&mut s.inner).poll_flush(cx),
         }
     }
     fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<std::io::Result<()>> {
         match self.get_mut() {
             NetStream::Tcp(s) => Pin::new(s).poll_shutdown(cx),
             NetStream::Duplex(s) => Pin::new(s).poll_shutdown(cx),
+            NetStream::Jump(s) => Pin::new(&mut s.inner).poll_shutdown(cx),
         }
     }
 }
@@ -115,16 +130,61 @@ pub async fn connect_to_host(host: &Host) -> Result<NetStream, String> {
         });
 
         Ok(NetStream::Duplex(client_stream))
+    } else if let Some(jump) = host.jump.as_deref() {
+        // Tunnel to the target through a bastion: open an SSH session to the
+        // jump host, then a direct-tcpip channel from it out to host:port. Any
+        // proxy configured on the *target* is bypassed - the bastion is the path.
+        let jump_handle = establish_jump(jump).await?;
+        let channel = jump_handle
+            .channel_open_direct_tcpip(host.hostname.clone(), host.port as u32, "127.0.0.1", 0)
+            .await
+            .map_err(|e| {
+                format!(
+                    "Jump host \"{}\" could not reach {}:{}: {e}",
+                    jump.name, host.hostname, host.port
+                )
+            })?;
+        Ok(NetStream::Jump(Box::new(JumpStream {
+            inner: channel.into_stream(),
+            _jump: jump_handle,
+        })))
     } else {
         let stream = open_target_stream(host).await?;
         Ok(NetStream::Tcp(stream))
     }
 }
 
+/// Open (and authenticate) an SSH session to a bastion/jump host, returning a
+/// live handle. The bastion's own `jump`, proxy, and agent settings are honored,
+/// so bastions can chain. The returned handle must stay alive for as long as the
+/// tunneled session runs - `NetStream::Jump` holds it for exactly that long.
+async fn establish_jump(host: &Host) -> Result<Arc<client::Handle<ClientHandler>>, String> {
+    let config = Arc::new(client::Config {
+        keepalive_interval: Some(Duration::from_secs(15)),
+        keepalive_max: 3,
+        ..Default::default()
+    });
+    let handler = ClientHandler {
+        host: host.clone(),
+        remote_routes: Arc::new(Mutex::new(HashMap::new())),
+    };
+    // Boxed because connect_to_host recurses back here for multi-hop chains.
+    let stream = Box::pin(connect_to_host(host)).await?;
+    let mut handle = tokio::time::timeout(
+        Duration::from_secs(15),
+        client::connect_stream(config, stream, handler),
+    )
+    .await
+    .map_err(|_| format!("Connection to jump host \"{}\" timed out", host.name))?
+    .map_err(|e| format!("Jump host \"{}\" connection failed: {e}", host.name))?;
+    authenticate(&mut handle, host).await?;
+    Ok(Arc::new(handle))
+}
+
 /// Open a TCP stream to the host's SSH endpoint, optionally through a proxy.
 /// When a proxy is configured the hostname is resolved *proxy-side* (no DNS leak
 /// for SOCKS5), and the target port is the host's SSH port.
-async fn open_target_stream(host: &Host) -> Result<tokio::net::TcpStream, String> {
+pub(crate) async fn open_target_stream(host: &Host) -> Result<tokio::net::TcpStream, String> {
     let ptype = host
         .proxy_type
         .as_deref()

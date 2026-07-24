@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { check } from "@tauri-apps/plugin-updater";
+import { relaunch } from "@tauri-apps/plugin-process";
 import { useVaultStore } from "../store";
 
 const REPO_URL = "https://github.com/Samarthegde/kino-ssh-manager";
@@ -9,10 +11,17 @@ interface Props {
   onClose: () => void;
 }
 
+/** Where the in-app install currently is. */
+type InstallPhase = "idle" | "working" | "downloading" | "installed" | "failed";
+
 export function AboutModal({ onClose }: Props) {
   const { updateInfo, checkForUpdate } = useVaultStore();
   const [version, setVersion] = useState("");
   const [checking, setChecking] = useState(false);
+
+  const [phase, setPhase] = useState<InstallPhase>("idle");
+  const [progress, setProgress] = useState({ received: 0, total: 0 });
+  const [installError, setInstallError] = useState("");
 
   useEffect(() => {
     getVersion().then(setVersion).catch(() => setVersion(""));
@@ -23,6 +32,45 @@ export function AboutModal({ onClose }: Props) {
     await checkForUpdate();
     setChecking(false);
   }
+
+  /**
+   * Download and install the signed release in place, then offer a relaunch.
+   * If the updater isn't usable on this build (no signing key configured, no
+   * published manifest, unsupported install target) we surface the reason and
+   * fall back to the release page rather than leaving a dead button.
+   */
+  async function installUpdate() {
+    setPhase("working");
+    setInstallError("");
+    setProgress({ received: 0, total: 0 });
+    try {
+      const update = await check();
+      if (!update) {
+        setPhase("failed");
+        setInstallError("No signed update package was published for this release.");
+        return;
+      }
+      let received = 0;
+      await update.downloadAndInstall((event) => {
+        if (event.event === "Started") {
+          setPhase("downloading");
+          setProgress({ received: 0, total: event.data.contentLength ?? 0 });
+        } else if (event.event === "Progress") {
+          received += event.data.chunkLength;
+          setProgress((p) => ({ ...p, received }));
+        } else if (event.event === "Finished") {
+          setPhase("working");
+        }
+      });
+      setPhase("installed");
+    } catch (e) {
+      setPhase("failed");
+      setInstallError(String(e));
+    }
+  }
+
+  const pct =
+    progress.total > 0 ? Math.min(100, Math.round((progress.received / progress.total) * 100)) : 0;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -52,10 +100,36 @@ export function AboutModal({ onClose }: Props) {
 
           {updateInfo?.available ? (
             <div className="about-update available">
-              <span>Update available - v{updateInfo.latest}</span>
-              <button className="btn btn-sm btn-primary" onClick={() => openUrl(updateInfo.url).catch(() => {})}>
-                Download
-              </button>
+              {phase === "installed" ? (
+                <>
+                  <span>v{updateInfo.latest} installed - restart to finish</span>
+                  <button className="btn btn-sm btn-primary" onClick={() => relaunch().catch(() => {})}>
+                    Restart now
+                  </button>
+                </>
+              ) : phase === "downloading" ? (
+                <>
+                  <span>
+                    Downloading v{updateInfo.latest}
+                    {progress.total > 0 ? ` - ${pct}%` : "…"}
+                  </span>
+                  <div className="update-bar" aria-label="Download progress">
+                    <div className="update-bar-fill" style={{ width: `${progress.total > 0 ? pct : 30}%` }} />
+                  </div>
+                </>
+              ) : phase === "working" ? (
+                <span>Preparing v{updateInfo.latest}…</span>
+              ) : (
+                <>
+                  <span>Update available - v{updateInfo.latest}</span>
+                  <button className="btn btn-sm btn-primary" onClick={installUpdate}>
+                    Install update
+                  </button>
+                  <button className="btn btn-sm" onClick={() => openUrl(updateInfo.url).catch(() => {})}>
+                    Release notes
+                  </button>
+                </>
+              )}
             </div>
           ) : (
             <div className="about-update">
@@ -64,6 +138,19 @@ export function AboutModal({ onClose }: Props) {
                 Check for updates
               </button>
             </div>
+          )}
+
+          {phase === "failed" && (
+            <p className="hint" style={{ color: "var(--red)", maxWidth: "44ch", textAlign: "center" }}>
+              Couldn't install automatically: {installError} — use{" "}
+              <a
+                href={updateInfo?.url ?? REPO_URL}
+                onClick={(e) => { e.preventDefault(); openUrl(updateInfo?.url ?? REPO_URL).catch(() => {}); }}
+              >
+                the release page
+              </a>{" "}
+              instead.
+            </p>
           )}
 
           <div className="about-meta">

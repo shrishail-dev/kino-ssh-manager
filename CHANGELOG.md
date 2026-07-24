@@ -4,6 +4,32 @@ All notable changes to Kino SSH Manager are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.6.1] - 2026-07-23
+
+### Added
+- **Jump host / bastion (ProxyJump)** - route a connection through another saved
+  host, like `ssh -J`. Pick a bastion in the host editor's Advanced step; kino
+  opens an SSH session to it and tunnels to the target over a direct-tcpip
+  channel. Each hop's host key is verified independently, and bastions can
+  themselves have a jump host, forming a chain. Works with any auth method the
+  bastion uses (including agent-mode relays).
+- **In-app updates** - when a new release is available, About now offers
+  **Install update**: the signed package is downloaded in place with a progress
+  bar and applied, then the app offers to relaunch. Updates are cryptographically
+  verified against the bundled public key; if no signed package is available the
+  UI falls back to the release page. Linux in-app updates apply to the AppImage
+  build; `.deb`/`.rpm` installs continue to update through the system package
+  manager or the release page.
+- **Host health indicators** - an opt-in background probe TCP-connects to each
+  host's SSH port and shows a green/red dot plus round-trip latency in the
+  sidebar. Configurable under **Settings → Host health checks** (Off by default;
+  30s / 1 min / 5 min). Hosts reached through a relay or a jump host report
+  "unknown" rather than a misleading "down", since probing them would mean
+  standing up a full session each cycle.
+- **Copy / paste toasts** - copying or pasting in a terminal now confirms what
+  happened ("Copied 3 lines"), including clipboard writes the remote host makes
+  via OSC 52, which were previously invisible.
+
 ## [0.6.0] - 2026-07-22
 
 ### Added
