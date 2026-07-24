@@ -5,16 +5,22 @@ A secure, cross-platform SSH credential manager and terminal, built with [Tauri 
 ## Features
 
 - **Encrypted vault** - Argon2 key derivation + AES-256-GCM. One master password unlocks everything.
-- **SSH terminal** - full xterm.js terminal per host, with scrollback search (Ctrl+F) and adjustable font size (Ctrl +/-/0).
-- **Flexible auth** - store a password and/or an SSH key per host (including encrypted keys with a passphrase); import `.pem`/`.key`/`.ppk` files or generate ed25519 keypairs.
+- **SSH terminal** - full xterm.js terminal per host, with split panes, broadcast input, scrollback search (Ctrl+F), copy/paste (Ctrl+Shift+C/V), and adjustable font size.
+- **Flexible auth** - store a password and/or an SSH key per host (including encrypted keys with a passphrase); import `.pem`/`.key`/`.ppk` files or generate ed25519 keypairs. Uses the SSH agent (OpenSSH agent / Pageant) when asked.
+- **Jump host / bastion** - route a connection through another saved host, like `ssh -J`. Each hop's host key is verified independently, and bastions can chain.
+- **Port forwarding** - local (`-L`), remote (`-R`), and dynamic SOCKS5 (`-D`) tunnels, started and stopped independently per session; optional dial-through SOCKS5/HTTP proxy per host.
+- **SFTP file browser & editor** - browse, upload/download with progress, rename, delete, new folder, chmod, and edit remote files in a built-in Monaco editor that saves straight back over SFTP.
+- **AI copilot (optional)** - a bring-your-own-key assistant in the terminal, powered by [OpenRouter](https://openrouter.ai). Ask about a host, explain an error, or select output and send it to the copilot. The key is encrypted in the vault; off by default.
+- **Docker, metrics & processes** - manage containers/images/volumes/networks with live logs and one-click shells, watch a streaming CPU/mem/disk/network dashboard, and list/kill processes - all over the SSH connection.
+- **Host health indicators** - optional background probe showing a reachability dot and round-trip latency per host in the sidebar.
+- **Session recording** - record any SSH or local session to an asciicast file and replay it in-app.
 - **Agent connection mode (optional)** - reach hosts that have **no inbound SSH port** (behind NAT, CGNAT, or a firewall) through a relay, using a companion agent that dials out. Off by default; enable it under Settings - Kino Agent. See [Agent connection mode](#agent-connection-mode).
-- **Port forwarding** - per-host local tunnels you can start/stop per session.
 - **Encrypted profile sharing** - export a host as a password-encrypted `.sshm` file (Argon2 + AES-256-GCM) to share it safely; the recipient needs only the password to import it.
-- **SFTP file browser** - browse, upload, download (with progress bars), rename, delete, new folder, and chmod.
 - **Snippets** - a reusable command library; selected snippets auto-run on connect, per host.
 - **Cloud sync (optional)** - sync the *encrypted* vault to a private GitHub repo (Contents API, sha-based conflict detection). Optional auto-sync (pull on unlock, push on change).
-- **Security niceties** - idle auto-lock, change-master-password (re-key), secrets zeroized in memory on lock.
-- **Quality of life** - host search, per-host accent colors (flag prod!), 6 themes, connection history, session logging.
+- **In-app updates** - install a new signed release from within About, with a fallback to the release page (AppImage on Linux; `.deb`/`.rpm` update via the system package manager).
+- **Security niceties** - idle auto-lock, change-master-password (re-key), TOFU host-key verification, secrets zeroized in memory on lock.
+- **Quality of life** - host health & latency, home favorites, session restore on unlock, customizable keyboard shortcuts, host groups, per-host accent colors, pinned/renamable panes, 14 themes, connection history, and `~/.ssh/config` import/export.
 
 ## Agent connection mode
 
@@ -64,8 +70,8 @@ npm run tauri build
 
 ## Tech stack
 
-- **Backend:** Rust - `ssh2` (SSH/SFTP), `aes-gcm` + `argon2` (vault crypto), `ureq` (cloud sync), `zeroize`.
-- **Frontend:** React + TypeScript + Vite, Zustand for state, xterm.js for the terminal.
+- **Backend:** Rust - `russh` (SSH/SFTP), `aes-gcm` + `argon2` (vault crypto), `ureq` (cloud sync / model API), `zeroize`.
+- **Frontend:** React + TypeScript + Vite, Zustand for state, xterm.js for the terminal, Monaco for the remote editor.
 
 ## Contributing
 
