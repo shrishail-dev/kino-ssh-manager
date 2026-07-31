@@ -92,6 +92,8 @@ fn block_to_hosts(block: &Block, default_user: Option<&str>) -> Vec<Host> {
             connection_mode: Some("direct".to_string()),
             agent_id: None,
             relay_url: None,
+            relay_token: None,
+            control_url: None,
             proxy_type: None,
             proxy_host: None,
             proxy_port: None,

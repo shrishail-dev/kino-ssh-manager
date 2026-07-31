@@ -12,227 +12,537 @@
   <meta property="og:url" content="https://samarthegde.github.io/kino-ssh-manager/" />
   <meta property="og:image" content="https://samarthegde.github.io/kino-ssh-manager/social-preview.png" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="theme-color" content="#0a0b0d" />
+  <meta name="theme-color" content="#100d0b" />
+  <meta name="color-scheme" content="dark" />
   <link rel="icon" type="image/png" href="favicon.png" />
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-
   <style>
-    :root {
-      --bg:        #0a0b0d;
-      --bg-2:      #0f1114;
-      --surface:   #131519;
-      --surface-2: #181b20;
-      --border:    #20242b;
-      --border-2:  #2a2f38;
-      --text:      #e7e9ec;
-      --subtext:   #98a0ac;
-      --faint:     #6a7280;
-      --accent:    #ef5d2e;
-      --accent-2:  #ff8159;
-      --accent-soft: rgba(255,110,64,0.11);
-      --green:     #4ade80;
-      --green-soft: rgba(74,222,128,0.12);
-      --maxw:      1120px;
-      --radius:    12px;
+    /* ════════════════════════════════════════════════════════════════════
+       KINO PROJECTION
+       The same design language as the kino-control dashboard and the desktop
+       client: constructivist film poster - bitumen black, unbleached paper,
+       one vermilion ink, no rounded corners anywhere, condensed display type
+       set in slabs. Colour is spent, not sprinkled.
+       ════════════════════════════════════════════════════════════════════ */
+
+    /* ── Fonts ─────────────────────────────────────────────────────────────
+     * Self-hosted variable woff2, latin + latin-ext (see fonts/OFL.txt).
+     * Relative URLs on purpose: this deploys under /kino-ssh-manager/, so a
+     * root-absolute /fonts/… would 404 on GitHub Pages. A page advertising a
+     * local-first credential manager should not phone a font CDN either.
+     */
+    @font-face {
+      font-family: "Big Shoulders Display";
+      font-style: normal; font-weight: 400 800; font-display: swap;
+      src: url("fonts/bigshoulders-latin.woff2") format("woff2");
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+        U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+        U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+    @font-face {
+      font-family: "Big Shoulders Display";
+      font-style: normal; font-weight: 400 800; font-display: swap;
+      src: url("fonts/bigshoulders-latin-ext.woff2") format("woff2");
+      unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+        U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+        U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    @font-face {
+      font-family: "Chivo";
+      font-style: normal; font-weight: 300 700; font-display: swap;
+      src: url("fonts/chivo-latin.woff2") format("woff2");
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+        U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+        U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+    @font-face {
+      font-family: "Chivo";
+      font-style: normal; font-weight: 300 700; font-display: swap;
+      src: url("fonts/chivo-latin-ext.woff2") format("woff2");
+      unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+        U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+        U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    @font-face {
+      font-family: "JetBrains Mono";
+      font-style: normal; font-weight: 400 700; font-display: swap;
+      src: url("fonts/jetbrainsmono-latin.woff2") format("woff2");
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+        U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+        U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+    @font-face {
+      font-family: "JetBrains Mono";
+      font-style: normal; font-weight: 400 700; font-display: swap;
+      src: url("fonts/jetbrainsmono-latin-ext.woff2") format("woff2");
+      unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+        U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+        U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    :root {
+      --bg:        #100d0b;   /* bitumen - the page itself */
+      --surface:   #191411;   /* slabs, cards, the head bar */
+      --surface-2: #1f1815;
+      --rule:      #352c26;   /* hairlines */
+      --text:      #ede3d2;   /* unbleached paper */
+      --subtext:   #b8ac9b;
+      --faint:     #857a6d;
 
+      --ink-red:       #e5452b;   /* vermilion - the alarm/accent, scarce */
+      --ink-paper:     #ede3d2;
+      --ink-verdigris: #63b39a;
+      --ink-marigold:  #e0a13c;
+
+      /* Kept because the markup references them; folded into the ink set. */
+      --accent:   var(--ink-red);
+      --accent-2: var(--ink-red);
+      --green:    var(--ink-verdigris);
+      --border:   var(--rule);
+      --border-2: var(--rule);
+
+      --font-display: "Big Shoulders Display", "Chivo", ui-sans-serif, sans-serif;
+      --font-sans:    "Chivo", ui-sans-serif, system-ui, sans-serif;
+      --font-mono:    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+      --maxw: 1120px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* A poster is cut, not moulded. */
+    [class], input, button, img { border-radius: 0; }
+
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; background: var(--bg); }
+
+    /* ── Page atmosphere ───────────────────────────────────────────────────
+     * A warm beam off the top-left (the projector), a cold vermilion bloom
+     * top right, and scanlines so the black is never flat.
+     */
     body {
-      background: var(--bg);
+      background-color: var(--bg);
+      background-image:
+        radial-gradient(120% 78% at 8% -14%, rgba(228, 168, 92, 0.11), transparent 58%),
+        radial-gradient(85% 55% at 96% -8%, rgba(229, 69, 43, 0.10), transparent 62%),
+        repeating-linear-gradient(to bottom, rgba(237, 227, 210, 0.016) 0 1px, transparent 1px 3px);
+      background-attachment: fixed;
       color: var(--text);
-      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      line-height: 1.55;
-      letter-spacing: -0.011em;
+      font-family: var(--font-sans);
+      line-height: 1.6;
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
       overflow-x: hidden;
     }
 
-    a { color: inherit; text-decoration: none; }
-    .mono { font-family: "JetBrains Mono", ui-monospace, Menlo, monospace; }
-    .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 28px; }
-    svg { display: block; }
+    /* Film grain, drawn once as inline turbulence - no image request. */
+    body::after {
+      content: "";
+      position: fixed; inset: 0; z-index: 60;
+      pointer-events: none;
+      opacity: 0.42;
+      mix-blend-mode: soft-light;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23g)' opacity='0.55'/%3E%3C/svg%3E");
+    }
 
-    /* ============ NAV ============ */
+    /* Decorative 35mm perforation rail, wide screens only. */
+    .filmstrip {
+      position: fixed; top: 0; bottom: 0; left: 0; width: 26px;
+      z-index: 20; pointer-events: none;
+      border-right: 1px solid rgba(53, 44, 38, 0.85);
+      background:
+        repeating-linear-gradient(to bottom,
+          transparent 0 14px,
+          rgba(237, 227, 210, 0.16) 14px 26px,
+          transparent 26px 40px),
+        linear-gradient(to bottom, var(--bg), var(--bg));
+      background-size: 12px 40px, 100% 100%;
+      background-position: 7px 0, 0 0;
+      background-repeat: repeat-y, no-repeat;
+      animation: film-advance 9s linear infinite;
+    }
+    @keyframes film-advance { to { background-position: 7px 40px, 0 0; } }
+    @media (max-width: 1279px) { .filmstrip { display: none; } }
+
+    a { color: inherit; text-decoration: none; }
+    svg { display: block; }
+    .mono { font-family: var(--font-mono); }
+    .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 28px; }
+
+    /* Uppercase mono micro-label - the workhorse of the whole page. */
+    .micro, .eyebrow, .side-label, .chip, .spec .row, .trust-row, .foot,
+    .pill, .new, .badge, .tt, .meta {
+      font-family: var(--font-mono);
+    }
+
+    .eyebrow {
+      display: inline-block;
+      font-size: 0.63rem; font-weight: 600;
+      letter-spacing: 0.26em; text-transform: uppercase;
+      color: var(--ink-red);
+    }
+    .eyebrow-dim { color: color-mix(in oklab, var(--ink-paper) 45%, transparent); }
+
+    /* ── Masthead ──────────────────────────────────────────────────────────*/
     .nav {
       position: sticky; top: 0; z-index: 50;
-      background: rgba(10,11,13,0.7);
-      backdrop-filter: saturate(180%) blur(14px);
-      border-bottom: 1px solid var(--border);
+      background: linear-gradient(to bottom, #1c1713, #17120f);
+      border-bottom: 1px solid var(--rule);
+      backdrop-filter: none;
     }
-    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 60px; }
-    .brand { display: flex; align-items: center; gap: 11px; font-weight: 600; font-size: 0.98rem; letter-spacing: -0.02em; }
-    .brand .mark { width: 28px; height: 28px; }
-    .nav-links { display: flex; align-items: center; gap: 8px; }
-    .nav-links a.lnk { color: var(--subtext); font-size: 0.9rem; padding: 8px 12px; border-radius: 8px; font-weight: 500; transition: color .15s, background .15s; }
-    .nav-links a.lnk:hover { color: var(--text); background: var(--surface); }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 62px; }
+
+    .wordmark { display: inline-flex; align-items: baseline; gap: 0.5rem; animation: ignite 900ms steps(1, end) 1 both; }
+    .wordmark-mark { width: 0.55rem; height: 1.4rem; background: var(--ink-red); align-self: center; flex: none; }
+    .wordmark-name {
+      font-family: var(--font-display); font-weight: 800; font-size: 1.9rem;
+      line-height: 0.8; letter-spacing: 0.01em; text-transform: uppercase; color: var(--ink-paper);
+    }
+    .wordmark-sub {
+      font-family: var(--font-mono); font-size: 0.6rem; font-weight: 500;
+      letter-spacing: 0.28em; text-transform: uppercase; color: var(--ink-red);
+    }
+
+    /* Projector strike: the lamp catches before it holds. */
+    @keyframes ignite {
+      0% { opacity: 0; } 14% { opacity: 0.75; } 22% { opacity: 0.1; }
+      38% { opacity: 0.95; } 50% { opacity: 0.3; } 64% { opacity: 1; } 100% { opacity: 1; }
+    }
+
+    /* The poster's colour bar, printed under the masthead. */
+    .ink-band {
+      height: 3px;
+      background: linear-gradient(to right,
+        var(--ink-red) 0 46%, var(--ink-paper) 46% 62%,
+        var(--ink-verdigris) 62% 71%, var(--ink-marigold) 71% 76%, transparent 76%);
+      animation: wipe-in 700ms cubic-bezier(0.16, 1, 0.3, 1) 180ms both;
+    }
+
+    .nav-links { display: flex; align-items: center; gap: 26px; }
+    .nav-links a.lnk {
+      position: relative;
+      font-family: var(--font-mono); font-size: 0.68rem; font-weight: 500;
+      letter-spacing: 0.17em; text-transform: uppercase;
+      color: color-mix(in oklab, var(--ink-paper) 62%, transparent);
+      padding: 0.45rem 0; transition: color 140ms ease;
+    }
+    .nav-links a.lnk::after {
+      content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 2px;
+      background: var(--ink-red); transform: scaleX(0); transform-origin: left;
+      transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .nav-links a.lnk:hover { color: var(--ink-paper); }
+    .nav-links a.lnk:hover::after { transform: scaleX(1); }
+
     .nav-gh {
       display: inline-flex; align-items: center; gap: 8px;
-      font-size: 0.88rem; font-weight: 500; color: var(--text);
-      padding: 7px 14px; border: 1px solid var(--border-2); border-radius: 8px;
-      transition: border-color .15s, background .15s;
+      font-family: var(--font-mono); font-size: 0.62rem; font-weight: 600;
+      letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-paper);
+      padding: 9px 14px; border: 1px solid var(--rule);
+      transition: background-color 140ms ease, border-color 140ms ease;
     }
-    .nav-gh:hover { border-color: var(--faint); background: var(--surface); }
+    .nav-gh:hover { background: color-mix(in oklab, var(--ink-paper) 9%, transparent); border-color: color-mix(in oklab, var(--ink-paper) 34%, transparent); }
     @media (max-width: 680px) { .nav-links a.lnk { display: none; } }
 
-    /* ============ HERO ============ */
-    .hero { position: relative; padding: 96px 0 60px; }
-    .hero::before {
-      content: ""; position: absolute; inset: 0; z-index: 0;
-      background-image:
-        linear-gradient(var(--border) 1px, transparent 1px),
-        linear-gradient(90deg, var(--border) 1px, transparent 1px);
-      background-size: 56px 56px;
-      mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 0%, transparent 72%);
-      -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 0%, transparent 72%);
-      opacity: 0.5;
-    }
-    .hero-inner { position: relative; z-index: 1; text-align: center; max-width: 760px; margin: 0 auto; }
-
-    .pill {
-      display: inline-flex; align-items: center; gap: 9px;
-      background: var(--surface); border: 1px solid var(--border-2);
-      color: var(--subtext); padding: 6px 14px 6px 8px; border-radius: 999px;
-      font-size: 0.8rem; font-weight: 500; margin-bottom: 30px;
-    }
-    .pill .tag { background: var(--accent-soft); color: var(--accent-2); border-radius: 999px; padding: 2px 9px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em; }
-
-    .hero h1 {
-      font-size: clamp(2.4rem, 5.4vw, 3.85rem); line-height: 1.04; font-weight: 600;
-      letter-spacing: -0.035em; margin-bottom: 22px;
-    }
-    .hero h1 .soft { color: var(--faint); }
-    .hero .lead { font-size: clamp(1.05rem, 2vw, 1.22rem); color: var(--subtext); max-width: 600px; margin: 0 auto 36px; font-weight: 400; }
-
-    .cta-row { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+    /* ── Buttons: letterpress ──────────────────────────────────────────────*/
     .btn {
       display: inline-flex; align-items: center; gap: 9px;
-      padding: 12px 22px; border-radius: 10px; font-weight: 600; font-size: 0.95rem;
-      border: 1px solid transparent; cursor: pointer; transition: transform .12s, opacity .12s, background .15s, border-color .15s;
+      font-family: var(--font-mono); font-size: 0.7rem; font-weight: 600;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      padding: 14px 24px; border: 1px solid transparent; cursor: pointer;
+      transition: transform 110ms ease, box-shadow 110ms ease, background-color 140ms ease, border-color 140ms ease;
     }
-    .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 1px 0 rgba(255,255,255,0.12) inset, 0 8px 24px -8px var(--accent); }
-    .btn-primary:hover { background: var(--accent-2); }
-    .btn-ghost { background: var(--surface); color: var(--text); border-color: var(--border-2); }
-    .btn-ghost:hover { border-color: var(--faint); background: var(--surface-2); }
+    /* The loud action is a knocked-out paper slab pressed into vermilion. */
+    .btn-primary {
+      background: var(--ink-paper); color: var(--bg); border-color: var(--ink-paper);
+      font-weight: 700; box-shadow: 4px 4px 0 0 var(--ink-red);
+    }
+    .btn-primary:hover { transform: translate(2px, 2px); box-shadow: 2px 2px 0 0 var(--ink-red); }
+    .btn-primary:active { transform: translate(4px, 4px); box-shadow: 0 0 0 0 var(--ink-red); }
+    .btn-ghost { background: transparent; color: var(--ink-paper); border-color: var(--rule); }
+    .btn-ghost:hover { background: color-mix(in oklab, var(--ink-paper) 9%, transparent); border-color: color-mix(in oklab, var(--ink-paper) 34%, transparent); }
+
+    :where(a, button):focus-visible { outline: 2px solid var(--ink-red); outline-offset: 2px; }
+
+    /* ── Hero ──────────────────────────────────────────────────────────────*/
+    .hero { position: relative; padding: 88px 0 56px; }
+    .hero-inner { position: relative; z-index: 1; max-width: 900px; }
+
+    .pill {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-size: 0.63rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase;
+      color: color-mix(in oklab, var(--ink-paper) 55%, transparent);
+      border: 1px solid var(--rule); border-left: 3px solid var(--ink-red);
+      padding: 8px 14px; margin-bottom: 30px;
+    }
+    .pill .tag { color: var(--ink-red); font-weight: 700; }
+
+    .hero h1 {
+      font-family: var(--font-display); font-weight: 800;
+      font-size: clamp(2.9rem, 8.4vw, 5.6rem); line-height: 0.84;
+      letter-spacing: -0.008em; text-transform: uppercase;
+      color: var(--ink-paper); margin-bottom: 26px;
+    }
+    .hero h1 .soft { color: color-mix(in oklab, var(--ink-paper) 42%, transparent); }
+    .hero h1 .stop { color: var(--ink-red); }
+
+    .hero .lead {
+      font-size: clamp(1rem, 1.7vw, 1.16rem);
+      color: color-mix(in oklab, var(--ink-paper) 62%, transparent);
+      max-width: 62ch; margin-bottom: 34px;
+    }
+
+    .cta-row { display: flex; flex-wrap: wrap; gap: 14px; }
 
     .trust-row {
-      display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 26px;
-      margin-top: 34px; color: var(--faint); font-size: 0.82rem; font-weight: 500;
+      display: flex; flex-wrap: wrap; gap: 10px 28px; margin-top: 38px;
+      padding-top: 22px; border-top: 1px solid var(--rule);
+      font-size: 0.6rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase;
+      color: color-mix(in oklab, var(--ink-paper) 48%, transparent);
     }
-    .trust-row span { display: inline-flex; align-items: center; gap: 7px; }
-    .trust-row svg { width: 15px; height: 15px; color: var(--green); }
+    .trust-row span { display: inline-flex; align-items: center; gap: 8px; }
+    .trust-row svg { width: 12px; height: 12px; color: var(--ink-verdigris); }
 
-    /* ============ APP MOCKUP ============ */
-    .shot { position: relative; z-index: 1; margin-top: 64px; }
+    /* ── App mockup ────────────────────────────────────────────────────────*/
+    .shot { position: relative; z-index: 1; margin-top: 60px; }
     .shot-frame {
-      max-width: 940px; margin: 0 auto;
-      background: var(--bg-2); border: 1px solid var(--border-2); border-radius: 16px;
-      box-shadow: 0 40px 120px -30px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.02);
+      background: var(--surface);
+      border: 1px solid var(--rule);
+      border-top: 3px solid var(--ink-red);
+      box-shadow: 18px 18px 0 -1px rgba(11, 9, 8, 0.8);
       overflow: hidden;
     }
-    .titlebar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
-    .titlebar .dots { display: flex; gap: 7px; }
-    .titlebar .dots i { width: 11px; height: 11px; border-radius: 50%; background: var(--border-2); display: block; }
-    .titlebar .tt { margin: 0 auto; font-size: 0.78rem; color: var(--faint); }
-    .app { display: grid; grid-template-columns: 230px 1fr; min-height: 340px; }
+    .titlebar { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-bottom: 1px solid var(--rule); }
+    .titlebar .dots { display: flex; gap: 6px; }
+    .titlebar .dots i { width: 9px; height: 9px; background: var(--rule); display: block; }
+    .titlebar .tt {
+      margin: 0 auto; font-size: 0.58rem; font-weight: 500;
+      letter-spacing: 0.22em; text-transform: uppercase;
+      color: color-mix(in oklab, var(--ink-paper) 42%, transparent);
+    }
+    .app { display: grid; grid-template-columns: 234px 1fr; min-height: 340px; }
     @media (max-width: 620px) { .app { grid-template-columns: 1fr; } .sidebar { display: none; } }
 
-    .sidebar { border-right: 1px solid var(--border); padding: 14px; background: var(--surface); }
+    .sidebar { border-right: 1px solid var(--rule); padding: 14px 0; background: color-mix(in oklab, var(--bg) 55%, transparent); }
     .side-search {
-      display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--faint);
-      background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase;
+      color: color-mix(in oklab, var(--ink-paper) 34%, transparent);
+      background: var(--bg); border: 1px solid var(--rule);
+      padding: 8px 10px; margin: 0 14px 16px;
     }
-    .side-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--faint); font-weight: 600; margin: 4px 0 8px 4px; }
-    .host { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; font-size: 0.85rem; color: var(--subtext); }
-    .host.active { background: var(--accent-soft); color: var(--text); }
-    .host .led { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .host .meta { margin-left: auto; font-size: 0.7rem; color: var(--faint); }
+    .side-label {
+      font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.24em;
+      color: var(--ink-red); font-weight: 600; margin: 0 0 8px 14px;
+    }
+    .host {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 14px; font-size: 0.78rem;
+      color: color-mix(in oklab, var(--ink-paper) 62%, transparent);
+      border-left: 2px solid transparent;
+      font-family: var(--font-mono);
+    }
+    .host.active { border-left-color: var(--ink-red); color: var(--ink-paper); background: color-mix(in oklab, var(--ink-paper) 5%, transparent); }
+    .host .led { width: 7px; height: 7px; flex-shrink: 0; }
+    .host .meta { margin-left: auto; font-size: 0.62rem; color: color-mix(in oklab, var(--ink-paper) 32%, transparent); }
 
-    .pane { background: var(--bg); display: flex; flex-direction: column; }
-    .pane-bar { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-bottom: 1px solid var(--border); font-size: 0.82rem; }
-    .pane-bar .nm { color: var(--text); font-weight: 500; }
-    .pane-bar .badge { display: inline-flex; align-items: center; gap: 5px; font-size: 0.72rem; color: var(--green); background: var(--green-soft); padding: 3px 9px; border-radius: 999px; font-weight: 500; }
-    .pane-bar .badge svg { width: 12px; height: 12px; }
-    .term { flex: 1; padding: 16px 18px; font-family: "JetBrains Mono", monospace; font-size: 0.82rem; line-height: 1.95; color: var(--subtext); }
-    .term .g { color: var(--green); }
-    .term .b { color: var(--accent-2); }
-    .term .w { color: var(--text); }
-    .term .d { color: var(--faint); }
-    .caret { display: inline-block; width: 7px; height: 1.05em; background: var(--subtext); vertical-align: text-bottom; animation: blink 1.15s step-end infinite; }
+    .pane { background: transparent; display: flex; flex-direction: column; }
+    .pane-bar { display: flex; align-items: center; gap: 12px; padding: 11px 18px; border-bottom: 1px solid var(--rule); font-size: 0.76rem; }
+    .pane-bar .nm { color: var(--ink-paper); font-weight: 500; }
+    .pane-bar .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 0.55rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--ink-verdigris); background: none; padding: 0;
+    }
+    .pane-bar .badge svg { width: 11px; height: 11px; }
+    .term { flex: 1; padding: 16px 18px; font-family: var(--font-mono); font-size: 0.78rem; line-height: 2; color: color-mix(in oklab, var(--ink-paper) 58%, transparent); }
+    .term .g { color: var(--ink-verdigris); }
+    .term .b { color: var(--ink-red); }
+    .term .w { color: var(--ink-paper); }
+    .term .d { color: color-mix(in oklab, var(--ink-paper) 34%, transparent); }
+    .caret { display: inline-block; width: 7px; height: 1.05em; background: var(--ink-red); vertical-align: text-bottom; animation: blink 1.15s step-end infinite; }
     @keyframes blink { 50% { opacity: 0; } }
 
-    /* ============ SECTIONS ============ */
-    section { padding: 92px 0; }
-    .eyebrow { color: var(--accent-2); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.1em; }
-    .sec-head { max-width: 620px; margin: 0 auto 56px; text-align: center; }
-    .sec-head h2 { font-size: clamp(1.85rem, 3.6vw, 2.5rem); font-weight: 600; letter-spacing: -0.03em; margin: 14px 0 12px; }
-    .sec-head p { color: var(--subtext); font-size: 1.05rem; }
+    /* ── Sections ──────────────────────────────────────────────────────────*/
+    section { padding: 96px 0; }
+    .sec-head { max-width: 720px; margin: 0 0 52px; }
+    .sec-head h2 {
+      font-family: var(--font-display); font-weight: 800;
+      font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 0.84;
+      letter-spacing: -0.005em; text-transform: uppercase;
+      color: var(--ink-paper); margin: 12px 0 16px;
+    }
+    .sec-head h2 .stop { color: var(--ink-red); }
+    .sec-head p { color: color-mix(in oklab, var(--ink-paper) 58%, transparent); font-size: 1rem; max-width: 60ch; }
 
-    /* feature grid */
-    .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+    /* ── Feature grid: one sheet of rules, not 22 boxes ────────────────────*/
+    .features {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      border-top: 1px solid var(--rule); border-left: 1px solid var(--rule);
+    }
     @media (max-width: 820px) { .features { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 540px) { .features { grid-template-columns: 1fr; } }
-    .feat { background: var(--bg); padding: 30px 26px; transition: background .15s; }
-    .feat:hover { background: var(--surface); }
-    .feat .ico { width: 38px; height: 38px; border-radius: 9px; background: var(--surface-2); border: 1px solid var(--border-2); display: grid; place-items: center; margin-bottom: 16px; color: var(--accent-2); }
-    .feat .ico svg { width: 19px; height: 19px; }
-    .feat h3 { font-size: 1rem; font-weight: 600; margin-bottom: 7px; letter-spacing: -0.01em; }
-    .feat p { color: var(--subtext); font-size: 0.9rem; }
+    .feat {
+      background: transparent;
+      border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+      border-left: 2px solid transparent;
+      padding: 28px 24px;
+      transition: border-left-color 180ms ease, background-color 180ms ease, transform 180ms ease;
+    }
+    .feat:hover {
+      border-left-color: var(--ink-red);
+      background: color-mix(in oklab, var(--surface-2) 92%, transparent);
+      transform: translateX(3px);
+    }
+    .feat .ico {
+      width: 34px; height: 34px; background: none; border: 1px solid var(--rule);
+      display: grid; place-items: center; margin-bottom: 16px; color: var(--ink-red);
+    }
+    .feat .ico svg { width: 17px; height: 17px; }
+    .feat h3 {
+      font-family: var(--font-mono); font-size: 0.8rem; font-weight: 600;
+      letter-spacing: 0.06em; color: var(--ink-paper); margin-bottom: 9px;
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .feat p { color: color-mix(in oklab, var(--ink-paper) 52%, transparent); font-size: 0.88rem; line-height: 1.65; }
+    .feat p .mono { color: color-mix(in oklab, var(--ink-paper) 72%, transparent); }
 
-    /* security */
-    .security { background: var(--bg-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-    .sec-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center; }
+    /* "New in this cut" - a hatched tag, never a coloured pill. */
+    .new {
+      font-size: 0.5rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--ink-red); border: 1px solid color-mix(in oklab, var(--ink-red) 45%, transparent);
+      padding: 2px 5px; flex: none;
+    }
+
+    /* ── Security ──────────────────────────────────────────────────────────*/
+    .security {
+      background: color-mix(in oklab, var(--surface) 55%, transparent);
+      border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+    }
+    .sec-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: start; }
     @media (max-width: 860px) { .sec-grid { grid-template-columns: 1fr; gap: 40px; } }
-    .sec-grid h2 { font-size: clamp(1.8rem, 3.4vw, 2.35rem); font-weight: 600; letter-spacing: -0.03em; margin: 14px 0 26px; }
-    .slist { list-style: none; display: flex; flex-direction: column; gap: 22px; }
-    .slist li { display: flex; gap: 14px; }
-    .slist .ck { width: 22px; height: 22px; border-radius: 6px; background: var(--green-soft); display: grid; place-items: center; flex-shrink: 0; margin-top: 2px; }
-    .slist .ck svg { width: 13px; height: 13px; color: var(--green); }
-    .slist b { color: var(--text); font-weight: 600; }
-    .slist .t { color: var(--subtext); font-size: 0.96rem; }
+    .sec-grid h2 {
+      font-family: var(--font-display); font-weight: 800;
+      font-size: clamp(2.1rem, 4.6vw, 3rem); line-height: 0.84;
+      text-transform: uppercase; color: var(--ink-paper); margin: 12px 0 28px;
+    }
+    .slist { list-style: none; display: flex; flex-direction: column; gap: 0; }
+    .slist li {
+      display: flex; gap: 14px; padding: 16px 0;
+      border-bottom: 1px solid color-mix(in oklab, var(--rule) 70%, transparent);
+    }
+    .slist li:first-child { border-top: 1px solid color-mix(in oklab, var(--rule) 70%, transparent); }
+    .slist .ck {
+      width: 18px; height: 18px; background: none;
+      border: 1px solid color-mix(in oklab, var(--ink-verdigris) 45%, transparent);
+      display: grid; place-items: center; flex-shrink: 0; margin-top: 3px;
+    }
+    .slist .ck svg { width: 11px; height: 11px; color: var(--ink-verdigris); }
+    .slist b { color: var(--ink-paper); font-weight: 600; }
+    .slist .t { color: color-mix(in oklab, var(--ink-paper) 55%, transparent); font-size: 0.92rem; line-height: 1.65; }
 
-    .spec { background: var(--surface); border: 1px solid var(--border-2); border-radius: 14px; overflow: hidden; }
-    .spec .sh { display: flex; align-items: center; gap: 9px; padding: 14px 18px; border-bottom: 1px solid var(--border); font-size: 0.82rem; color: var(--subtext); }
-    .spec .sh svg { width: 16px; height: 16px; color: var(--accent-2); }
-    .spec .row { display: flex; justify-content: space-between; align-items: center; padding: 13px 18px; font-family: "JetBrains Mono", monospace; font-size: 0.82rem; border-bottom: 1px solid var(--border); }
+    /* The crypto table, set like a spec sheet. */
+    .spec { background: color-mix(in oklab, var(--surface) 88%, transparent); border: 1px solid var(--rule); border-top: 2px solid var(--ink-red); }
+    .spec .sh {
+      display: flex; align-items: center; gap: 10px; padding: 14px 18px;
+      border-bottom: 1px solid var(--ink-red);
+      font-family: var(--font-mono); font-size: 0.6rem; font-weight: 600;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      color: color-mix(in oklab, var(--ink-paper) 62%, transparent);
+    }
+    .spec .sh svg { width: 14px; height: 14px; color: var(--ink-red); }
+    .spec .row {
+      display: flex; justify-content: space-between; align-items: center; gap: 16px;
+      padding: 13px 18px; font-size: 0.7rem; letter-spacing: 0.06em;
+      border-bottom: 1px solid color-mix(in oklab, var(--rule) 70%, transparent);
+      transition: background-color 140ms ease;
+    }
     .spec .row:last-child { border-bottom: none; }
-    .spec .k { color: var(--faint); }
-    .spec .v { color: var(--text); }
+    .spec .row:hover { background: color-mix(in oklab, var(--ink-paper) 4%, transparent); }
+    .spec .k { color: color-mix(in oklab, var(--ink-paper) 45%, transparent); text-transform: uppercase; letter-spacing: 0.14em; font-size: 0.58rem; }
+    .spec .v { color: var(--ink-paper); text-align: right; }
 
-    /* stack */
-    .chips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-width: 720px; margin: 0 auto; }
-    .chip { background: var(--surface); border: 1px solid var(--border-2); border-radius: 9px; padding: 9px 16px; font-size: 0.86rem; color: var(--subtext); font-family: "JetBrains Mono", monospace; }
-    .chip b { color: var(--text); font-weight: 500; }
+    /* ── Stack chips ───────────────────────────────────────────────────────*/
+    .chips { display: flex; flex-wrap: wrap; gap: 10px; max-width: 760px; }
+    .chip {
+      background: repeating-linear-gradient(-45deg, transparent 0 4px, rgba(237,227,210,0.06) 4px 8px);
+      border: 1px solid var(--rule); padding: 9px 14px;
+      font-size: 0.68rem; letter-spacing: 0.1em;
+      color: color-mix(in oklab, var(--ink-paper) 55%, transparent);
+    }
+    .chip b { color: var(--ink-paper); font-weight: 600; }
 
-    /* cta */
-    .cta-band { text-align: center; }
-    .cta-card { position: relative; background: var(--bg-2); border: 1px solid var(--border-2); border-radius: 20px; padding: 64px 32px; overflow: hidden; }
-    .cta-card::before { content: ""; position: absolute; inset: 0; background: radial-gradient(600px 200px at 50% -20%, var(--accent-soft), transparent 70%); }
-    .cta-card > * { position: relative; }
-    .cta-card h2 { font-size: clamp(1.7rem, 4vw, 2.3rem); font-weight: 600; letter-spacing: -0.03em; margin-bottom: 14px; }
-    .cta-card p { color: var(--subtext); max-width: 460px; margin: 0 auto 30px; }
+    /* ── Closing card ──────────────────────────────────────────────────────*/
+    .cta-card {
+      position: relative;
+      background: color-mix(in oklab, var(--surface) 88%, transparent);
+      border: 1px solid var(--rule); border-top: 3px solid var(--ink-red);
+      padding: 64px 40px; overflow: hidden;
+    }
+    .cta-card h2 {
+      font-family: var(--font-display); font-weight: 800;
+      font-size: clamp(2.1rem, 5vw, 3.2rem); line-height: 0.84;
+      text-transform: uppercase; color: var(--ink-paper); margin-bottom: 18px;
+    }
+    .cta-card h2 .stop { color: var(--ink-red); }
+    .cta-card p { color: color-mix(in oklab, var(--ink-paper) 58%, transparent); max-width: 52ch; margin-bottom: 32px; }
 
-    /* footer */
-    footer { border-top: 1px solid var(--border); padding: 40px 0; }
-    .foot { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; color: var(--faint); font-size: 0.85rem; }
-    .foot .fbrand { display: flex; align-items: center; gap: 9px; color: var(--subtext); }
-    .foot .fbrand .mark { width: 20px; height: 20px; }
-    .foot nav { display: flex; gap: 22px; }
-    .foot nav a { color: var(--faint); transition: color .15s; }
-    .foot nav a:hover { color: var(--text); }
+    /* ── Footer ────────────────────────────────────────────────────────────*/
+    footer { border-top: 1px solid var(--rule); padding: 36px 0; }
+    .foot {
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;
+      font-size: 0.6rem; letter-spacing: 0.16em; text-transform: uppercase;
+      color: color-mix(in oklab, var(--ink-paper) 40%, transparent);
+    }
+    .foot .fbrand { display: flex; align-items: center; gap: 10px; }
+    .foot .fbrand .mark { width: 18px; height: 18px; opacity: 0.8; }
+    .foot nav { display: flex; gap: 24px; flex-wrap: wrap; }
+    .foot nav a { color: color-mix(in oklab, var(--ink-paper) 40%, transparent); transition: color 140ms ease; }
+    .foot nav a:hover { color: var(--ink-paper); }
+
+    /* ── Load choreography ─────────────────────────────────────────────────
+     * One orchestrated reveal beats a dozen scattered micro-interactions.
+     */
+    @keyframes reel-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+    @keyframes wipe-in { from { opacity: 0; clip-path: inset(0 100% 0 0); } to { opacity: 1; clip-path: inset(0 0 0 0); } }
+
+    .reel > * { animation: reel-in 620ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+    .reel > *:nth-child(1) { animation-delay: 60ms; }
+    .reel > *:nth-child(2) { animation-delay: 130ms; }
+    .reel > *:nth-child(3) { animation-delay: 200ms; }
+    .reel > *:nth-child(4) { animation-delay: 270ms; }
+    .reel > *:nth-child(5) { animation-delay: 340ms; }
+    .reel > *:nth-child(6) { animation-delay: 410ms; }
+
+    .shot { animation: reel-in 760ms cubic-bezier(0.16, 1, 0.3, 1) 420ms both; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        /* Delays must go too: with fill-mode "both" a staggered element sits at
+           its from-state (opacity 0) for the whole delay - content invisible for
+           half a second is not a reduced-motion experience. */
+        animation-delay: 0ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+      .reel > *, .shot, .ink-band { opacity: 1; transform: none; clip-path: none; }
+      .filmstrip { animation: none; }
+      html { scroll-behavior: auto; }
+    }
   </style>
 </head>
 <body>
 
+  <div class="filmstrip" aria-hidden="true"></div>
+
   <!-- NAV -->
   <header class="nav">
     <div class="wrap nav-inner">
-      <a class="brand" href="#"><img class="mark" src="icon.png" alt="" /> Kino SSH Manager</a>
+      <a class="wordmark" href="#" aria-label="Kino SSH Manager">
+        <span class="wordmark-mark" aria-hidden="true"></span>
+        <span class="wordmark-name">Kino</span>
+        <span class="wordmark-sub">SSH</span>
+      </a>
       <nav class="nav-links">
         <a class="lnk" href="#features">Features</a>
         <a class="lnk" href="#security">Security</a>
@@ -243,14 +553,15 @@
         </a>
       </nav>
     </div>
+    <div class="ink-band" aria-hidden="true"></div>
   </header>
 
   <!-- HERO -->
   <section class="hero">
     <div class="wrap">
-      <div class="hero-inner">
+      <div class="hero-inner reel">
         <span class="pill"><span class="tag">v0.6</span> New: jump hosts, an AI copilot &amp; customizable shortcuts</span>
-        <h1>Manage every SSH host<br><span class="soft">without trusting the cloud.</span></h1>
+        <h1>Every SSH host<br><span class="soft">without the cloud</span><span class="stop">.</span></h1>
         <p class="lead">
           A cross-platform credential manager and terminal. Your hosts, keys, and passwords
           live in one encrypted vault on your machine - never on a server, never in plaintext.
@@ -316,7 +627,7 @@
     <div class="wrap">
       <div class="sec-head">
         <span class="eyebrow">Features</span>
-        <h2>One app for every connection</h2>
+        <h2>One app for every connection<span class="stop">.</span></h2>
         <p>A full terminal, file transfer, tunnels, and a credential vault - in a single native binary.</p>
       </div>
       <div class="features">
@@ -382,31 +693,31 @@
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="2.4"/><circle cx="12" cy="12" r="2.4"/><circle cx="19" cy="12" r="2.4"/><path d="M7.4 12h2.2M14.4 12h2.2" stroke-linecap="round"/></svg></div>
-          <h3>Jump hosts <span style="color:var(--accent-2);font-size:0.72rem;font-weight:600;">NEW</span></h3><p>Reach private hosts through a bastion, just like <span class="mono">ssh -J</span>. Pick any saved host as the jump; kino tunnels the session over it. Every hop's host key is verified independently, and bastions can chain.</p>
+          <h3>Jump hosts <span class="new">New</span></h3><p>Reach private hosts through a bastion, just like <span class="mono">ssh -J</span>. Pick any saved host as the jump; kino tunnels the session over it. Every hop's host key is verified independently, and bastions can chain.</p>
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 4.6 4.6 1.9-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z" stroke-linejoin="round"/><path d="M18 15l.8 2.2 2.2.8-2.2.8L18 21l-.8-2.2-2.2-.8 2.2-.8z" stroke-linejoin="round"/></svg></div>
-          <h3>AI copilot <span style="color:var(--accent-2);font-size:0.72rem;font-weight:600;">NEW</span></h3><p>An opt-in, bring-your-own-key assistant in the terminal, powered by OpenRouter. Ask about a host, explain an error, or select output and send it straight to the copilot. Your key stays encrypted in the vault.</p>
+          <h3>AI copilot <span class="new">New</span></h3><p>An opt-in, bring-your-own-key assistant in the terminal, powered by OpenRouter. Ask about a host, explain an error, or select output and send it straight to the copilot. Your key stays encrypted in the vault.</p>
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <h3>Customizable shortcuts <span style="color:var(--accent-2);font-size:0.72rem;font-weight:600;">NEW</span></h3><p>Rebind the command palette, terminal find, copy, paste and font shortcuts to whatever fits your muscle memory - with live conflict detection and per-action reset.</p>
+          <h3>Customizable shortcuts <span class="new">New</span></h3><p>Rebind the command palette, terminal find, copy, paste and font shortcuts to whatever fits your muscle memory - with live conflict detection and per-action reset.</p>
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9 9 9 0 00-6.4 2.6L3 8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 3v5h5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <h3>Session restore <span style="color:var(--accent-2);font-size:0.72rem;font-weight:600;">NEW</span></h3><p>Optionally remember your open tabs and pane layout and rebuild them on unlock, reconnecting each host into its original pane - pick up right where you left off.</p>
+          <h3>Session restore <span class="new">New</span></h3><p>Optionally remember your open tabs and pane layout and rebuild them on unlock, reconnecting each host into its original pane - pick up right where you left off.</p>
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01L12 2z" stroke-linejoin="round"/></svg></div>
-          <h3>Home favorites <span style="color:var(--accent-2);font-size:0.72rem;font-weight:600;">NEW</span></h3><p>Pin the hosts you use most to a home panel of one-click connect cards, shown whenever a pane is empty. Star a host in the sidebar to add it.</p>
+          <h3>Home favorites <span class="new">New</span></h3><p>Pin the hosts you use most to a home panel of one-click connect cards, shown whenever a pane is empty. Star a host in the sidebar to add it.</p>
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M5 12v0M12 12v0M19 12v0" stroke-linecap="round"/><path d="M4 17c2 1.4 4 1.4 6 0M14 17c2 1.4 4 1.4 6 0" stroke-linecap="round"/></svg></div>
-          <h3>Host health <span style="color:var(--accent-2);font-size:0.72rem;font-weight:600;">NEW</span></h3><p>An optional background probe shows a live reachability dot and round-trip latency next to each host, so you can see what's up before you connect. Off by default.</p>
+          <h3>Host health <span class="new">New</span></h3><p>An optional background probe shows a live reachability dot and round-trip latency next to each host, so you can see what's up before you connect. Off by default.</p>
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12" stroke-linecap="round"/><path d="M7 10l5 5 5-5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20h16" stroke-linecap="round"/></svg></div>
-          <h3>In-app updates <span style="color:var(--accent-2);font-size:0.72rem;font-weight:600;">NEW</span></h3><p>Install a new release from inside the app - the signed package downloads and applies in place, then offers a relaunch. Every update is verified against a bundled public key.</p>
+          <h3>In-app updates <span class="new">New</span></h3><p>Install a new release from inside the app - the signed package downloads and applies in place, then offers a relaunch. Every update is verified against a bundled public key.</p>
         </div>
       </div>
     </div>
@@ -416,8 +727,8 @@
   <section id="security" class="security">
     <div class="wrap sec-grid">
       <div>
-        <span class="eyebrow" style="color:var(--green)">Security model</span>
-        <h2>Built so secrets stay yours</h2>
+        <span class="eyebrow">Security model</span>
+        <h2>Built so secrets stay yours<span class="stop">.</span></h2>
         <ul class="slist">
           <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="t"><b>Local-first by default.</b> The vault is an AES-256-GCM ciphertext on your disk. Plaintext never touches a server.</span></li>
           <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="t"><b>Argon2-derived key.</b> Your master password plus a random 16-byte salt derive the key. Nothing is stored in the clear.</span></li>
@@ -446,7 +757,7 @@
     <div class="wrap">
       <div class="sec-head">
         <span class="eyebrow">Under the hood</span>
-        <h2>Native, fast, and small</h2>
+        <h2>Native, fast, and small<span class="stop">.</span></h2>
         <p>A Rust backend behind a React interface, packaged as a lightweight Tauri 2 desktop app.</p>
       </div>
       <div class="chips">
@@ -465,8 +776,8 @@
   <section class="cta-band">
     <div class="wrap">
       <div class="cta-card">
-        <h2>Your hosts, everywhere - on your terms.</h2>
-        <p>Free and open source under the MIT license. Download a build, or compile it yourself in minutes.</p>
+        <h2>Your hosts, everywhere<span class="stop">.</span></h2>
+        <p>Free and open source under the GPL-3.0 license. Download a build, or compile it yourself in minutes.</p>
         <div class="cta-row">
           <a class="btn btn-primary" href="https://github.com/Samarthegde/kino-ssh-manager/releases">Download</a>
           <a class="btn btn-ghost" href="https://github.com/Samarthegde/kino-ssh-manager">Star on GitHub</a>
@@ -478,7 +789,7 @@
   <!-- FOOTER -->
   <footer>
     <div class="wrap foot">
-      <div class="fbrand"><img class="mark" src="icon.png" alt="" /> Kino SSH Manager · MIT licensed</div>
+      <div class="fbrand"><img class="mark" src="icon.png" alt="" /> Kino SSH Manager · GPL-3.0 licensed</div>
       <nav>
         <a href="https://github.com/Samarthegde/kino-ssh-manager">GitHub</a>
         <a href="https://github.com/Samarthegde/kino-ssh-manager/blob/main/SECURITY.md">Security</a>

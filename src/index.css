@@ -7,20 +7,108 @@
   padding: 0;
 }
 
+/* ── Fonts ───────────────────────────────────────────────────────────────────
+ * Self-hosted variable woff2, latin + latin-ext, copied from kino-control so
+ * both halves of Kino set type identically (see public/fonts/OFL.txt). An app
+ * that holds SSH private keys does not phone a font CDN - and it must render
+ * offline, which is the normal case for a desktop client.
+ */
+@font-face {
+  font-family: "Big Shoulders Display";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: block;
+  src: url("/fonts/bigshoulders-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Big Shoulders Display";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: block;
+  src: url("/fonts/bigshoulders-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Chivo";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: block;
+  src: url("/fonts/chivo-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Chivo";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: block;
+  src: url("/fonts/chivo-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: block;
+  src: url("/fonts/jetbrainsmono-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: block;
+  src: url("/fonts/jetbrainsmono-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 :root {
-  --bg: #1e1e2e;
-  --surface: #181825;
-  --overlay: #313244;
-  --muted: #45475a;
-  --subtle: #6c7086;
-  --text: #cdd6f4;
-  --subtext: #a6adc8;
-  --blue: #89b4fa;
-  --green: #a6e3a1;
-  --red: #f38ba8;
-  --yellow: #f9e2af;
-  --mauve: #cba6f7;
-  --radius: 6px;
+  /* Ink set - overwritten at runtime by applyTheme(). These defaults are the
+     "Kino Projection" house theme, identical to the kino-control web UI. */
+  --bg: #100d0b;
+  --surface: #191411;
+  --overlay: #241d19;
+  --muted: #352c26;
+  --subtle: #857a6d;
+  --text: #ede3d2;
+  --subtext: #b8ac9b;
+  --blue: #e5452b;
+  --green: #63b39a;
+  --red: #e5452b;
+  --yellow: #e0a13c;
+  --mauve: #7f97bd;
+  --btn-primary-fg: #100d0b;
+
+  /* A poster is cut, not moulded. */
+  --radius: 0;
+
+  --font-display: "Big Shoulders Display", "Chivo", ui-sans-serif, sans-serif;
+  --font-sans: "Chivo", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Semantic aliases over the theme slots, so the Kino rules below read the
+     way the design language talks. `--blue` is the accent slot every theme
+     fills; in the house theme it happens to be vermilion. */
+  --ink-accent: var(--blue);
+  --ink-paper: var(--text);
+  --ink-verdigris: var(--green);
+  --rule: var(--muted);
+  /* App.tsx draws the split-pane divider with this. */
+  --border: var(--muted);
 }
 
 html,
@@ -30,7 +118,7 @@ body,
   overflow: hidden;
   background: var(--bg);
   color: var(--text);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
 }
 
@@ -896,7 +984,9 @@ body,
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  /* Dialogs are the topmost layer - above the full-page settings view (300)
+     and the context menu (400). */
+  z-index: 500;
 }
 
 .modal {
@@ -1585,6 +1675,217 @@ textarea.mono {
   padding: 4px;
 }
 
+/* Full-page settings view (replaces the old dropdown) */
+.settings-page {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+.settings-page-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--muted);
+  background: var(--surface);
+}
+.settings-page-header h2 {
+  margin: 0;
+  font-size: 15px;
+  flex: 1;
+}
+.settings-page-close {
+  background: none;
+  border: 1px solid var(--muted);
+  color: var(--subtext);
+  border-radius: var(--radius);
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.settings-page-close:hover {
+  color: var(--text);
+  background: var(--overlay);
+}
+.settings-page-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+.settings-nav {
+  width: 200px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--muted);
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--surface);
+}
+.settings-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--subtext);
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: calc(var(--radius) - 2px);
+  cursor: pointer;
+}
+.settings-nav-item svg { flex-shrink: 0; opacity: 0.8; }
+.settings-nav-item:hover {
+  background: var(--overlay);
+  color: var(--text);
+}
+.settings-nav-item.active {
+  background: var(--overlay);
+  color: var(--text);
+  font-weight: 600;
+}
+.settings-nav-danger {
+  color: var(--red, #f38ba8);
+}
+.settings-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 32px 48px;
+}
+
+/* Grouped cards: heading + description, then rows separated by hairlines. */
+.settings-group {
+  max-width: 640px;
+  margin: 0 0 22px;
+}
+.settings-group-header h3 {
+  margin: 0 0 3px;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.9;
+}
+.settings-group-header p {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: var(--subtle);
+  line-height: 1.45;
+}
+.settings-group-body {
+  background: var(--surface);
+  border: 1px solid var(--muted);
+  border-radius: var(--radius);
+  padding: 2px 16px;
+}
+.settings-item {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 0;
+}
+.settings-item + .settings-item {
+  border-top: 1px solid var(--muted);
+}
+.settings-item-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.settings-item-label {
+  font-size: 13px;
+  color: var(--text);
+}
+.settings-item-desc {
+  font-size: 11.5px;
+  color: var(--subtle);
+  line-height: 1.4;
+}
+.settings-item-control {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+.settings-item-control .settings-select {
+  min-width: 120px;
+}
+.settings-input {
+  width: 240px;
+  padding: 6px 10px;
+  font-size: 13px;
+  background: var(--overlay);
+  border: 1px solid var(--muted);
+  border-radius: calc(var(--radius) - 2px);
+  color: var(--text);
+}
+.settings-input:focus {
+  outline: none;
+  border-color: var(--accent, var(--subtext));
+}
+.settings-btn {
+  padding: 6px 14px;
+  font-size: 13px;
+  background: var(--overlay);
+  border: 1px solid var(--muted);
+  border-radius: calc(var(--radius) - 2px);
+  color: var(--text);
+  cursor: pointer;
+}
+.settings-btn:hover:not(:disabled) {
+  background: var(--muted);
+}
+.settings-btn:disabled {
+  color: var(--subtle);
+  cursor: default;
+}
+.settings-btn-accent {
+  border-color: var(--accent, var(--subtext));
+  color: var(--accent, var(--text));
+}
+
+/* Toggle switch for boolean settings */
+.settings-switch {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  border: 1px solid var(--muted);
+  background: var(--overlay);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.settings-switch-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--subtext);
+  transition: transform 0.15s, background 0.15s;
+}
+.settings-switch.on {
+  background: var(--accent, var(--subtext));
+  border-color: var(--accent, var(--subtext));
+}
+.settings-switch.on .settings-switch-knob {
+  transform: translateX(16px);
+  background: var(--bg);
+}
+.settings-switch:focus-visible {
+  outline: 2px solid var(--accent, var(--subtext));
+  outline-offset: 2px;
+}
+
 /* Right-click menu (pane routing for hosts and tabs) */
 .context-menu {
   position: fixed;
@@ -1971,238 +2272,6 @@ textarea.mono {
   color: var(--subtle);
   font-size: 13px;
   flex-shrink: 0;
-}
-
-/* ════════════════════════════════════════════════════════════════════
-   Polish layer - refined depth, motion, and focus across the app.
-   Appended last so it layers over the base rules above.
-   ════════════════════════════════════════════════════════════════════ */
-:root {
-  --radius: 8px;
-  --radius-lg: 14px;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.18);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.28);
-  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.45);
-  --ring: 0 0 0 3px color-mix(in srgb, var(--blue) 30%, transparent);
-}
-
-html,
-body {
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-}
-
-/* Consistent, slim, themed scrollbars everywhere */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--muted) transparent;
-}
-
-::-webkit-scrollbar {
-  width: 9px;
-  height: 9px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--muted);
-  border-radius: 9px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--subtle);
-}
-
-/* Inputs - soft focus ring instead of a bare border swap */
-input,
-textarea,
-select {
-  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
-}
-
-input:focus,
-textarea:focus,
-select:focus,
-.unlock-input:focus,
-.sftp-rename-input:focus {
-  border-color: var(--blue);
-  box-shadow: var(--ring);
-}
-
-/* Buttons - gentle lift + depth; primary gets a soft colored glow */
-.btn {
-  transition: background 0.14s, border-color 0.14s, transform 0.07s ease, box-shadow 0.14s, filter 0.14s;
-}
-
-.btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-}
-
-.btn:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.btn:disabled {
-  transform: none;
-}
-
-.btn.btn-primary {
-  box-shadow: 0 2px 10px color-mix(in srgb, var(--blue) 32%, transparent);
-}
-
-.btn.btn-primary:hover:not(:disabled) {
-  filter: brightness(1.08);
-  box-shadow: 0 5px 18px color-mix(in srgb, var(--blue) 45%, transparent);
-}
-
-.icon-btn,
-.header-icon-btn,
-.term-tool-btn {
-  transition: color 0.14s, background 0.14s, transform 0.07s;
-}
-
-.term-tool-btn:hover {
-  transform: translateY(-1px);
-}
-
-/* Subtle top-light gradient on the chrome surfaces */
-.app-header,
-.sidebar,
-.tab-bar {
-  background-image: linear-gradient(color-mix(in srgb, var(--text) 2.5%, transparent), transparent 60%);
-}
-
-/* Sidebar host rows - hairline outline on hover + crisper accent */
-.host-item {
-  transition: background 0.14s, box-shadow 0.14s;
-}
-
-.host-item:hover {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 7%, transparent);
-}
-
-/* Tabs - glowing rounded indicator instead of a flat underline */
-.tab.active {
-  border-bottom-color: transparent;
-  position: relative;
-}
-
-.tab.active::after {
-  content: "";
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 0;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--blue);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--blue) 55%, transparent);
-}
-
-/* Dropdowns / popovers - unified soft elevation */
-.export-dropdown,
-.settings-dropdown,
-.fwd-dropdown,
-.term-search {
-  box-shadow: var(--shadow-md);
-  border-color: color-mix(in srgb, var(--text) 8%, var(--muted));
-}
-
-/* Modals - backdrop blur + spring entrance */
-.modal-overlay {
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(7px) saturate(1.05);
-  -webkit-backdrop-filter: blur(7px) saturate(1.05);
-  animation: overlay-in 0.18s ease;
-}
-
-.modal {
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  border-color: color-mix(in srgb, var(--text) 8%, var(--muted));
-  animation: pop-in 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-/* Resizable modal - drag the bottom-right corner to resize */
-.modal.modal-resizable {
-  resize: both;
-  overflow: auto;
-  min-width: 440px;
-  min-height: 360px;
-  max-width: 95vw;
-}
-
-@keyframes overlay-in {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes pop-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.985);
-  }
-
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-/* Unlock screen - ambient gradient stage + glassy, glowing card */
-.unlock-screen {
-  background:
-    radial-gradient(1200px 600px at 50% -15%, color-mix(in srgb, var(--blue) 16%, transparent), transparent 60%),
-    radial-gradient(900px 520px at 100% 115%, color-mix(in srgb, var(--mauve) 13%, transparent), transparent 60%),
-    var(--bg);
-}
-
-.unlock-card {
-  border-radius: 20px;
-  padding: 38px 36px 32px;
-  box-shadow: var(--shadow-lg);
-  border-color: color-mix(in srgb, var(--text) 10%, var(--muted));
-  background:
-    linear-gradient(color-mix(in srgb, var(--text) 4%, transparent), transparent 55%),
-    var(--surface);
-  animation: pop-in 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.unlock-logo {
-  width: 74px;
-  height: 74px;
-  display: grid;
-  place-items: center;
-  border-radius: 20px;
-  color: var(--blue);
-  background: color-mix(in srgb, var(--blue) 14%, transparent);
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--blue) 32%, transparent),
-    0 10px 28px color-mix(in srgb, var(--blue) 26%, transparent);
-}
-
-.unlock-logo svg {
-  width: 38px;
-  height: 38px;
-}
-
-.unlock-card h1 {
-  letter-spacing: -0.02em;
-}
-
-.unlock-btn {
-  padding: 11px;
-  font-weight: 600;
 }
 
 /* ── Docker panel ───────────────────────────────────────────────── */
@@ -3102,3 +3171,2255 @@ select:focus,
   margin: 0;
   accent-color: var(--blue);
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   KINO PROJECTION
+   The house design language, shared with the kino-control web UI.
+
+   The product is named after cinema and its whole job is patching a dark
+   machine through to a projector, so the client is built like a constructivist
+   film poster: bitumen black, unbleached paper, one vermilion ink, no rounded
+   corners anywhere, condensed display type set in slabs. Colour is spent, not
+   sprinkled - vermilion marks structure and alarm, nothing else.
+
+   Appended last so it layers over the base rules above. Every rule here reads
+   from the theme slots (--text, --blue, --muted …), so all fifteen themes get
+   the Kino *form* printed in their own ink.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── A poster is cut, not moulded ───────────────────────────────────────────
+ * `[class]` scores 0-1-0, so it ties with the single-class radius rules above
+ * and wins on source order; bare elements are named explicitly. This is the
+ * one sweeping rule in the file, and it replaces ~40 scattered radii.
+ */
+[class],
+input,
+textarea,
+select,
+button,
+dialog {
+  border-radius: 0;
+}
+
+/* ── Page atmosphere ─────────────────────────────────────────────────────────
+ * A warm beam off the top-left (the projector), a cold vermilion bloom top
+ * right, and scanlines so the black is never flat. Grain rides above it all.
+ */
+
+.app-root,
+.unlock-screen,
+.settings-page {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(120% 78% at 8% -14%, color-mix(in srgb, var(--yellow) 11%, transparent), transparent 58%),
+    radial-gradient(85% 55% at 96% -8%, color-mix(in srgb, var(--ink-accent) 10%, transparent), transparent 62%),
+    repeating-linear-gradient(to bottom, color-mix(in srgb, var(--ink-paper) 2%, transparent) 0 1px, transparent 1px 3px);
+  background-attachment: fixed;
+}
+
+/* Film grain, drawn once as inline turbulence - no image request. It rides
+ * over the chassis but never over the picture: .terminal-wrap and the modal
+ * layer both sit above it (481 / 500), everything else below. */
+.app-root::after,
+.unlock-screen::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 480;
+  pointer-events: none;
+  opacity: 0.34;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23g)' opacity='0.55'/%3E%3C/svg%3E");
+}
+
+/* The picture is clean. Grain stops at the terminal's edge. */
+.terminal-wrap {
+  position: relative;
+  z-index: 481;
+}
+
+/* Chrome is printed *on* the atmosphere, so it has to let some through. */
+.main-area,
+.terminal-area {
+  background: transparent;
+}
+
+.app-header,
+.sidebar,
+.tab-bar {
+  background-color: color-mix(in srgb, var(--surface) 82%, transparent);
+  background-image: none;
+  border-color: var(--rule);
+}
+
+/* ── The 35mm perforation rail ───────────────────────────────────────────────
+ * Decoration only. It advances slowly down the left edge of the sidebar, the
+ * one piece of continuous motion in the app.
+ */
+.filmstrip {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 12px;
+  z-index: 40;
+  pointer-events: none;
+  border-right: 1px solid color-mix(in srgb, var(--rule) 85%, transparent);
+  /* Perforations are the *first* layer, so they sit on top of the wash and
+     read as holes punched through the strip rather than being painted over. */
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 14px,
+      color-mix(in srgb, var(--ink-paper) 26%, transparent) 14px 26px,
+      transparent 26px 40px
+    ),
+    linear-gradient(to bottom, var(--bg), var(--bg));
+  background-size: 6px 40px, 100% 100%;
+  background-position: 3px 0, 0 0;
+  background-repeat: repeat-y, no-repeat;
+  animation: film-advance 9s linear infinite;
+}
+
+@keyframes film-advance {
+  to { background-position: 3px 40px, 0 0; }
+}
+
+/* The rail eats 12px on the left; the shell starts after it. */
+.app-root > .app-header,
+.app-root > .app-layout {
+  padding-left: 12px;
+}
+
+@media (max-width: 900px) {
+  .filmstrip { display: none; }
+  .app-root > .app-header,
+  .app-root > .app-layout { padding-left: 0; }
+}
+
+/* ── Masthead ────────────────────────────────────────────────────────────────*/
+
+.app-header {
+  height: 46px;
+  padding: 0 14px;
+  position: relative;
+  z-index: 30;
+  background-image: linear-gradient(to bottom,
+    color-mix(in srgb, var(--overlay) 55%, var(--surface)),
+    var(--surface));
+  border-bottom: 1px solid var(--rule);
+}
+
+.app-header-left {
+  gap: 10px;
+}
+
+/* The poster's colour bar, printed under the masthead. */
+.ink-band {
+  height: 3px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 30;
+  background: linear-gradient(
+    to right,
+    var(--ink-accent) 0 46%,
+    var(--ink-paper) 46% 62%,
+    var(--ink-verdigris) 62% 71%,
+    var(--yellow) 71% 76%,
+    transparent 76%
+  );
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  /* Projector strike: the lamp catches before it holds. */
+  animation: ignite 900ms steps(1, end) 1 both;
+}
+
+.wordmark-mark {
+  width: 6px;
+  height: 17px;
+  background: var(--ink-accent);
+  align-self: center;
+  flex: none;
+}
+
+.wordmark-name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 25px;
+  line-height: 0.8;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--ink-paper);
+}
+
+.wordmark-sub {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--ink-accent);
+}
+
+@keyframes ignite {
+  0%   { opacity: 0; }
+  14%  { opacity: 0.75; }
+  22%  { opacity: 0.1; }
+  38%  { opacity: 0.95; }
+  50%  { opacity: 0.3; }
+  64%  { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+/* ── Type ────────────────────────────────────────────────────────────────────
+ * Three registers and no more: condensed display for slab headings, Chivo for
+ * anything a human reads in a sentence, and uppercase mono for every label,
+ * badge, address and status word in the app.
+ */
+
+/* Uppercase mono micro-label. Every one of these was a soft grey sans label. */
+.sidebar-title,
+.home-title,
+.form-row label,
+.form-section-title,
+.export-dropdown-title,
+.settings-section-title,
+.field-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink-paper) 52%, transparent);
+}
+
+.sidebar-title {
+  color: var(--ink-paper);
+  letter-spacing: 0.22em;
+}
+
+.home-title {
+  color: var(--ink-accent);
+  letter-spacing: 0.26em;
+  margin-bottom: 16px;
+}
+
+/* Addresses, ports, fingerprints, IDs - anything a machine chose. */
+.host-meta,
+.home-card-meta,
+.tab-label,
+.settings-value,
+.hostkey-fp-value {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.01em;
+}
+
+/* Slab headings: modal titles and the settings page title. */
+.modal-header h2,
+.settings-page-header h2,
+.docker-modal-title,
+.metrics-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 0.9;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  color: var(--ink-paper);
+}
+
+/* ── Slabs ───────────────────────────────────────────────────────────────────
+ * What would otherwise be a rounded card. A hairline box with a heavier rule
+ * along the top edge, like a printed panel.
+ */
+
+.modal,
+.home-card,
+.form-section,
+.settings-card,
+.export-dropdown,
+.settings-dropdown,
+.fwd-dropdown,
+.term-search,
+.term-sel-menu,
+.context-menu {
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  border: 1px solid var(--rule);
+  border-top: 2px solid color-mix(in srgb, var(--ink-paper) 22%, transparent);
+}
+
+/* Popovers are struck, not floated: a hard offset shadow, never a blur halo. */
+.export-dropdown,
+.settings-dropdown,
+.fwd-dropdown,
+.term-search,
+.term-sel-menu,
+.context-menu {
+  box-shadow: 6px 6px 0 -1px color-mix(in srgb, var(--bg) 88%, transparent);
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────────
+ * Letterpress: the slab sits on a hard offset shadow and presses into it.
+ */
+
+.btn {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid var(--rule);
+  color: var(--ink-paper);
+  transition: transform 110ms ease, box-shadow 110ms ease,
+    background-color 140ms ease, border-color 140ms ease;
+}
+
+.btn:hover:not(:disabled) {
+  transform: none;
+  background: color-mix(in srgb, var(--ink-paper) 8%, transparent);
+  border-color: color-mix(in srgb, var(--ink-paper) 34%, var(--rule));
+}
+
+.btn:disabled {
+  opacity: 0.42;
+  transform: none;
+}
+
+/* The loud, filled action is a knocked-out paper slab, pressed into vermilion.
+   Colour is spent here and almost nowhere else. */
+.btn.btn-primary {
+  background: var(--ink-paper);
+  border-color: var(--ink-paper);
+  color: var(--bg);
+  font-weight: 700;
+  box-shadow: 4px 4px 0 0 var(--ink-accent);
+}
+
+.btn.btn-primary:hover:not(:disabled) {
+  filter: none;
+  background: var(--ink-paper);
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 0 var(--ink-accent);
+}
+
+.btn.btn-primary:active:not(:disabled) {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 0 var(--ink-accent);
+}
+
+.btn.btn-primary:disabled {
+  box-shadow: 4px 4px 0 0 color-mix(in srgb, var(--rule) 80%, transparent);
+}
+
+.btn.btn-danger {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--red) 55%, transparent);
+  color: var(--red);
+}
+
+.btn.btn-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--red) 16%, transparent);
+  border-color: var(--red);
+}
+
+.btn.btn-sm {
+  padding: 5px 10px;
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+}
+
+/* Icon buttons stay quiet - they're tools, not actions. */
+.icon-btn,
+.header-icon-btn,
+.term-tool-btn,
+.tab-close {
+  transition: color 140ms ease, background-color 140ms ease;
+}
+
+.icon-btn:hover,
+.header-icon-btn:hover,
+.header-icon-btn.active,
+.term-tool-btn:hover {
+  transform: none;
+  background: color-mix(in srgb, var(--ink-paper) 9%, transparent);
+  color: var(--ink-paper);
+}
+
+/* One focus treatment, everywhere. */
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--ink-accent);
+  outline-offset: 2px;
+}
+
+/* ── Inputs ──────────────────────────────────────────────────────────────────
+ * Sunken, square, and underscored in vermilion when live - no glow ring.
+ */
+
+input,
+textarea,
+select,
+.unlock-input,
+.sftp-rename-input {
+  /* A well cut into the slab. --bg differs from --surface in every theme, so
+     this reads as sunken either way; the dark themes get extra depth below. */
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  color: var(--ink-paper);
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+input:focus,
+textarea:focus,
+select:focus,
+.unlock-input:focus,
+.sftp-rename-input:focus {
+  border-color: var(--ink-accent);
+  box-shadow: inset 0 -2px 0 0 var(--ink-accent);
+  outline: none;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: color-mix(in srgb, var(--ink-paper) 26%, transparent);
+}
+
+textarea.mono,
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* Scrollbars: a rule, not a pill. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--rule);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--ink-paper) 30%, transparent);
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────────────────────*/
+
+.sidebar {
+  border-right: 1px solid var(--rule);
+}
+
+.sidebar-header {
+  height: 38px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--ink-accent);
+}
+
+.sidebar-footer {
+  border-top: 1px solid var(--rule);
+}
+
+/* Host rows: the hover bar grows out of the left edge, like a table row in
+ * kino-control. No fill, no outline, no lift - one 2px stroke of ink. */
+.host-item {
+  position: relative;
+  margin: 0;
+  padding: 9px 10px 9px 14px;
+  border-top: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--rule) 60%, transparent);
+  border-radius: 0;
+  transition: background-color 140ms ease;
+}
+
+.host-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--ink-accent);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.host-item:hover {
+  background: color-mix(in srgb, var(--ink-paper) 4%, transparent);
+  box-shadow: none;
+}
+
+.host-item:hover::before {
+  transform: scaleY(1);
+}
+
+.host-name {
+  font-weight: 600;
+  letter-spacing: 0.005em;
+}
+
+.host-meta {
+  color: color-mix(in srgb, var(--ink-paper) 42%, transparent);
+}
+
+/* Three lines, not four: the auth tag and the status signal share the last
+ * one, the way a machine row reads in kino-control. The health badge is only
+ * rendered once a probe has run, and a missing grid area just collapses. */
+.host-info {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  grid-template-areas:
+    "name   name   name"
+    "meta   meta   meta"
+    "auth   health .";
+  align-items: center;
+  gap: 3px 9px;
+}
+
+.host-info > .host-name { grid-area: name; min-width: 0; }
+.host-info > .host-meta { grid-area: meta; min-width: 0; }
+.host-info > .auth-badge { grid-area: auth; }
+.host-info > .health-badge { grid-area: health; margin-top: 0; }
+
+/* Monogram tile - a square of ink, not a rounded avatar. */
+.host-avatar {
+  width: 26px;
+  height: 26px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  background: transparent;
+  border: 1px solid var(--rule);
+  color: color-mix(in srgb, var(--ink-paper) 60%, transparent);
+}
+
+.host-item:hover .host-avatar {
+  border-color: color-mix(in srgb, var(--ink-paper) 40%, var(--rule));
+  color: var(--ink-paper);
+}
+
+/* Auth badges become hatched tags - neither good nor bad, just a fact. */
+.auth-badge {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 2px 5px;
+  border: 1px solid var(--rule);
+  color: color-mix(in srgb, var(--ink-paper) 55%, transparent);
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent 0 4px,
+    color-mix(in srgb, var(--ink-paper) 6%, transparent) 4px 8px
+  );
+}
+
+.auth-badge.key,
+.auth-badge.pw,
+.auth-badge.both {
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent 0 4px,
+    color-mix(in srgb, var(--ink-paper) 6%, transparent) 4px 8px
+  );
+}
+
+.auth-badge.key { color: color-mix(in srgb, var(--blue) 80%, var(--ink-paper)); border-color: color-mix(in srgb, var(--blue) 30%, var(--rule)); }
+.auth-badge.pw { color: color-mix(in srgb, var(--mauve) 80%, var(--ink-paper)); border-color: color-mix(in srgb, var(--mauve) 30%, var(--rule)); }
+.auth-badge.both { color: color-mix(in srgb, var(--green) 80%, var(--ink-paper)); border-color: color-mix(in srgb, var(--green) 30%, var(--rule)); }
+
+/* ── Status signals ──────────────────────────────────────────────────────────
+ * A square pip and an uppercase word. The live pip transmits a carrier ring.
+ */
+
+.health-badge {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  gap: 6px;
+}
+
+.health-dot,
+.tab-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.health-badge.up { color: var(--ink-verdigris); }
+.health-badge.up .health-dot {
+  background: var(--ink-verdigris);
+  box-shadow: none;
+  animation: carrier 2.4s ease-out infinite;
+}
+
+.health-badge.down { color: var(--red); }
+.health-badge.down .health-dot { background: var(--red); box-shadow: none; }
+
+.health-badge.unknown { color: color-mix(in srgb, var(--ink-paper) 34%, transparent); }
+.health-badge.unknown .health-dot { background: currentColor; }
+
+@keyframes carrier {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ink-verdigris) 60%, transparent); }
+  70%  { box-shadow: 0 0 0 8px color-mix(in srgb, var(--ink-verdigris) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ink-verdigris) 0%, transparent); }
+}
+
+.tab-dot.online { background: var(--ink-verdigris); animation: carrier 2.4s ease-out infinite; }
+.tab-dot.offline { background: color-mix(in srgb, var(--ink-paper) 30%, transparent); }
+
+/* The connect spinner counts down in mono instead of fading a glyph. */
+.connecting-spinner {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--ink-accent);
+  animation: pulse 1s steps(2, end) infinite;
+}
+
+/* ── Tabs ────────────────────────────────────────────────────────────────────*/
+
+.tab-bar {
+  border-bottom: 1px solid var(--rule);
+}
+
+.tab {
+  position: relative;
+  gap: 7px;
+  /* Squares the tab strip up with the 38px sidebar header, so the two rules
+     that meet at the sidebar's right edge land on the same line. */
+  padding: 12px 14px;
+  border-bottom: 0;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink-paper) 50%, transparent);
+}
+
+.tab::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--ink-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.tab:hover { color: var(--ink-paper); }
+.tab:hover::after { transform: scaleX(1); }
+
+.tab.active {
+  color: var(--ink-paper);
+  border-bottom-color: transparent;
+  background: color-mix(in srgb, var(--ink-paper) 5%, transparent);
+}
+
+.tab.active::after { transform: scaleX(1); }
+
+.tab.disconnected { color: color-mix(in srgb, var(--ink-paper) 28%, transparent); }
+
+/* Tab-bar tools read as a strip of stamps. */
+.fwd-trigger {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* ── Home panel ──────────────────────────────────────────────────────────────
+ * Favourite hosts, printed as a sheet of contact cards.
+ */
+
+.home-panel {
+  padding: 26px 28px;
+}
+
+.home-grid {
+  grid-template-columns: repeat(auto-fill, minmax(214px, 1fr));
+  gap: 0;
+  border-top: 1px solid var(--rule);
+  border-left: 1px solid var(--rule);
+}
+
+/* One shared grid of rules rather than 20 separate boxes. */
+.home-card {
+  border: 0;
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  border-left: 2px solid transparent;
+  background: transparent;
+  padding: 14px 16px;
+  transition: border-left-color 180ms ease, background-color 180ms ease, transform 180ms ease;
+}
+
+.home-card:hover {
+  border-left-color: var(--ink-accent);
+  background: color-mix(in srgb, var(--ink-paper) 5%, transparent);
+  transform: translateX(3px);
+}
+
+.home-card:active { transform: translateX(3px) translateY(1px); }
+
+.home-card-icon {
+  width: 30px;
+  height: 30px;
+  background: transparent;
+  border: 1px solid var(--rule);
+  color: color-mix(in srgb, var(--ink-paper) 55%, transparent);
+}
+
+.home-card:hover .home-card-icon {
+  border-color: var(--ink-accent);
+  color: var(--ink-accent);
+}
+
+.home-card-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.home-card-meta {
+  color: color-mix(in srgb, var(--ink-paper) 40%, transparent);
+}
+
+/* Empty states get the poster treatment: eyebrow, then a headline in slab. */
+.home-panel.empty,
+.welcome {
+  gap: 0;
+}
+
+.home-panel.empty .home-title {
+  order: -1;
+  margin: 18px 0 6px;
+}
+
+.home-panel.empty > svg,
+.welcome > svg {
+  opacity: 0.16;
+}
+
+.welcome p,
+.home-panel.empty .hint {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink-paper) 38%, transparent);
+  margin-top: 14px;
+  line-height: 1.9;
+}
+
+.empty-state {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  line-height: 2;
+  color: color-mix(in srgb, var(--ink-paper) 34%, transparent);
+}
+
+/* ── Modals ──────────────────────────────────────────────────────────────────*/
+
+.modal-overlay {
+  background: color-mix(in srgb, var(--bg) 74%, transparent);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  animation: overlay-in 0.18s ease;
+}
+
+.modal {
+  border-top: 3px solid var(--ink-accent);
+  box-shadow: 14px 14px 0 -1px color-mix(in srgb, var(--bg) 85%, transparent);
+  animation: cut-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-header {
+  border-bottom: 1px solid var(--rule);
+  padding: 14px 20px 12px;
+}
+
+/* A cut, not a spring: the slab wipes in from its own top edge. */
+@keyframes cut-in {
+  from { opacity: 0; clip-path: inset(0 0 100% 0); }
+  to   { opacity: 1; clip-path: inset(0 0 0 0); }
+}
+
+/* ── Unlock screen ───────────────────────────────────────────────────────────
+ * The title card. Everything the app can do sits behind this one field, so it
+ * gets the only full-size display type in the client.
+ */
+
+.unlock-card {
+  width: 400px;
+  padding: 0;
+  gap: 0;
+  align-items: stretch;
+  text-align: left;
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  border: 1px solid var(--rule);
+  border-top: 3px solid var(--ink-accent);
+  box-shadow: 16px 16px 0 -1px color-mix(in srgb, var(--bg) 82%, transparent);
+  animation: cut-in 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* The card's contents reel in one after another. */
+.unlock-card > * {
+  animation: reel-in 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.unlock-card > *:nth-child(1) { animation-delay: 180ms; }
+.unlock-card > *:nth-child(2) { animation-delay: 250ms; }
+.unlock-card > *:nth-child(3) { animation-delay: 320ms; }
+.unlock-card > *:nth-child(4) { animation-delay: 390ms; }
+.unlock-card > *:nth-child(5) { animation-delay: 460ms; }
+.unlock-card > *:nth-child(6) { animation-delay: 530ms; }
+.unlock-card > *:nth-child(7) { animation-delay: 600ms; }
+
+/* The lens badge: a square of ink with the aperture knocked out. */
+.unlock-logo {
+  width: auto;
+  height: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 22px 26px 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--ink-accent);
+}
+
+.unlock-logo svg {
+  width: 30px;
+  height: 30px;
+}
+
+.unlock-logo::after {
+  content: "Vault";
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--ink-accent);
+}
+
+.unlock-card h1 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 54px;
+  line-height: 0.82;
+  letter-spacing: -0.005em;
+  text-transform: uppercase;
+  color: var(--ink-paper);
+  padding: 12px 26px 0;
+}
+
+.unlock-card h1 .stop { color: var(--ink-accent); }
+
+.unlock-version {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink-paper) 40%, transparent);
+  padding: 12px 26px 0;
+}
+
+.unlock-subtitle {
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: left;
+  color: color-mix(in srgb, var(--ink-paper) 62%, transparent);
+  padding: 16px 26px 0;
+}
+
+.unlock-card form {
+  gap: 10px;
+  padding: 18px 26px 4px;
+}
+
+.unlock-input {
+  padding: 11px 13px;
+  font-size: 13px;
+}
+
+.unlock-pw-wrap .unlock-input { padding-right: 42px; }
+
+.unlock-btn {
+  padding: 12px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+}
+
+.unlock-hint,
+.unlock-error {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  line-height: 1.7;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.unlock-error {
+  color: var(--red);
+  border-left: 2px solid var(--red);
+  padding-left: 9px;
+}
+
+.unlock-hint { color: color-mix(in srgb, var(--ink-paper) 40%, transparent); }
+
+/* Colophon strip along the bottom edge of the card. */
+.unlock-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding: 14px 26px;
+  border-top: 1px solid var(--rule);
+}
+
+.unlock-foot-note {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink-paper) 32%, transparent);
+}
+
+.unlock-update {
+  align-self: flex-start;
+  margin: 16px 26px 0;
+}
+
+.unlock-link {
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-paper);
+  box-shadow: inset 0 -1px 0 0 var(--ink-accent);
+  padding: 2px 0;
+  margin: 10px 26px 22px;
+  transition: background-color 140ms ease;
+}
+
+.unlock-link:hover {
+  text-decoration: none;
+  background: color-mix(in srgb, var(--ink-accent) 18%, transparent);
+}
+
+.unlock-update {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-verdigris);
+  border: 1px solid color-mix(in srgb, var(--ink-verdigris) 45%, transparent);
+  background: none;
+  cursor: pointer;
+  padding: 5px 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Load choreography ───────────────────────────────────────────────────────
+ * One orchestrated reveal beats a dozen scattered micro-interactions. The
+ * shell reels in top-down: masthead, colour bar, sidebar, then the picture.
+ */
+
+@keyframes reel-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes wipe-in {
+  from { opacity: 0; clip-path: inset(0 100% 0 0); }
+  to   { opacity: 1; clip-path: inset(0 0 0 0); }
+}
+
+/* The lamp coming up to full - opacity only, deliberately.
+ *
+ * The three shell containers each host fixed-position overlays: .app-header
+ * contains .settings-page and eight modals, .sidebar contains the connect /
+ * host-key / host-form dialogs and the host context menu. An element with a
+ * `transform` animation in effect becomes the containing block for its fixed
+ * descendants, so animating these with reel-in resolved `inset: 0` against a
+ * 46px header instead of the viewport - the overlay painted its background
+ * 46px tall and let its children overflow. `clip-path` and `filter` create a
+ * containing block too; `opacity` creates only a stacking context, which these
+ * already have. Leaf content with no overlays inside it still reels in below.
+ */
+@keyframes lamp-up {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.app-header { animation: lamp-up 520ms ease both; }
+.ink-band { animation: wipe-in 620ms cubic-bezier(0.16, 1, 0.3, 1) 140ms both; }
+.sidebar { animation: lamp-up 560ms ease 100ms both; }
+.main-area { animation: lamp-up 560ms ease 200ms both; }
+.filmstrip { animation: lamp-up 500ms ease 260ms both, film-advance 9s linear 760ms infinite; }
+
+/* Host rows deal out like cards. Capped at 12 - past that the stagger reads as
+   lag rather than choreography, and long lists scroll anyway. */
+.host-list .host-item {
+  animation: reel-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.host-list .host-item:nth-child(1) { animation-delay: 240ms; }
+.host-list .host-item:nth-child(2) { animation-delay: 280ms; }
+.host-list .host-item:nth-child(3) { animation-delay: 320ms; }
+.host-list .host-item:nth-child(4) { animation-delay: 360ms; }
+.host-list .host-item:nth-child(5) { animation-delay: 400ms; }
+.host-list .host-item:nth-child(6) { animation-delay: 440ms; }
+.host-list .host-item:nth-child(7) { animation-delay: 480ms; }
+.host-list .host-item:nth-child(8) { animation-delay: 520ms; }
+.host-list .host-item:nth-child(9) { animation-delay: 560ms; }
+.host-list .host-item:nth-child(10) { animation-delay: 600ms; }
+.host-list .host-item:nth-child(11) { animation-delay: 640ms; }
+.host-list .host-item:nth-child(n + 12) { animation-delay: 680ms; }
+
+.home-grid > .home-card {
+  animation: reel-in 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.home-grid > .home-card:nth-child(1) { animation-delay: 40ms; }
+.home-grid > .home-card:nth-child(2) { animation-delay: 90ms; }
+.home-grid > .home-card:nth-child(3) { animation-delay: 140ms; }
+.home-grid > .home-card:nth-child(4) { animation-delay: 190ms; }
+.home-grid > .home-card:nth-child(5) { animation-delay: 240ms; }
+.home-grid > .home-card:nth-child(6) { animation-delay: 290ms; }
+.home-grid > .home-card:nth-child(n + 7) { animation-delay: 340ms; }
+
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Toast and the command palette are styled in the PANELS layer below, where
+   they can outrank their base rules further up the file. */
+
+/* ════════════════════════════════════════════════════════════════════
+   KINO PROJECTION - PANELS
+
+   The deep surfaces: settings, menus, dialogs, and the five tool panels
+   (SFTP, Docker, Metrics, Processes, Copilot). Same six idioms throughout,
+   so nothing here needs to invent a new shape:
+
+     micro      uppercase mono label, 0.2em tracking, ~52% paper
+     slab       hairline box, heavier rule along the top edge
+     ink-bar    a 2px vermilion stroke that grows out of a row's left edge
+     signal     square status pip + uppercase word; live pips transmit
+     hatch      45° paper hatching for "neither good nor bad" states
+     grow       an underline that scales in from the left, for tabs
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── Shared micro-labels across every panel ──────────────────────────────────*/
+
+.settings-section-label,
+.context-menu-header,
+.fwd-dropdown-title,
+.docker-logs-title,
+.palette-group,
+.copilot-role,
+.copilot-thinking-label,
+.metric-stat-label,
+.hostkey-fp-label,
+.connect-label,
+.settings-group-header h3 {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink-paper) 50%, transparent);
+}
+
+/* ── Menus: settings dropdown, context menu, export menu ─────────────────────
+ * A menu row is a slab row: no fill on hover, an ink bar on the left instead.
+ */
+
+.settings-action,
+.settings-theme-option,
+.context-menu-item,
+.export-item,
+.fwd-item {
+  position: relative;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.settings-action::before,
+.settings-theme-option::before,
+.context-menu-item::before,
+.export-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--ink-accent);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.settings-action:hover::before,
+.settings-theme-option:hover::before,
+.context-menu-item:hover:not(:disabled)::before,
+.export-item:hover::before {
+  transform: scaleY(1);
+}
+
+.settings-action:hover,
+.settings-theme-option:hover,
+.context-menu-item:hover:not(:disabled),
+.export-item:hover {
+  background: color-mix(in srgb, var(--ink-paper) 6%, transparent);
+  color: var(--ink-paper);
+}
+
+.settings-theme-option.active {
+  color: var(--ink-paper);
+  box-shadow: inset 2px 0 0 0 var(--ink-accent);
+}
+
+.settings-divider {
+  background: var(--rule);
+}
+
+.settings-action-danger:hover {
+  background: color-mix(in srgb, var(--red) 14%, transparent);
+}
+.settings-action-danger::before { background: var(--red); }
+
+/* ── Selects, switches, small inputs ─────────────────────────────────────────*/
+
+.settings-select,
+.fwd-kind {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  background-color: var(--bg);
+  border: 1px solid var(--rule);
+  color: var(--ink-paper);
+}
+
+/* Mono at 0.06em tracking is appreciably wider than the sans this replaced,
+   and the longest theme name ("Kino Projection") was being clipped. */
+.settings-item-control .settings-select {
+  min-width: 164px;
+}
+
+.settings-select:focus {
+  border-color: var(--ink-accent);
+  box-shadow: inset 0 -2px 0 0 var(--ink-accent);
+  outline: none;
+}
+
+.settings-input {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+}
+
+/* `--accent` was never defined anywhere, so every one of these silently fell
+   back to --subtext. They mean the accent ink. */
+.settings-input:focus {
+  border-color: var(--ink-accent);
+  box-shadow: inset 0 -2px 0 0 var(--ink-accent);
+}
+
+.settings-btn {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--rule);
+  color: var(--ink-paper);
+  padding: 6px 12px;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.settings-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ink-paper) 8%, transparent);
+  border-color: color-mix(in srgb, var(--ink-paper) 34%, var(--rule));
+}
+
+.settings-btn-accent {
+  border-color: var(--ink-accent);
+  color: var(--ink-accent);
+}
+
+/* A switch is a slot with a block in it, not a pill with a bead. */
+.settings-switch {
+  width: 38px;
+  height: 20px;
+  background: transparent;
+  border: 1px solid var(--rule);
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.settings-switch-knob {
+  width: 14px;
+  height: 14px;
+  top: 2px;
+  left: 2px;
+  background: color-mix(in srgb, var(--ink-paper) 42%, transparent);
+  transition: transform 150ms cubic-bezier(0.2, 0.8, 0.2, 1), background-color 150ms ease;
+}
+
+.settings-switch.on {
+  background: var(--ink-accent);
+  border-color: var(--ink-accent);
+}
+
+.settings-switch.on .settings-switch-knob {
+  /* 36px inner - 14px knob - 2px start - 2px end */
+  transform: translateX(18px);
+  background: var(--bg);
+}
+
+.settings-switch:focus-visible {
+  outline: 2px solid var(--ink-accent);
+  outline-offset: 2px;
+}
+
+/* ── Settings page ───────────────────────────────────────────────────────────*/
+
+.settings-page-header {
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border-bottom: 1px solid var(--ink-accent);
+  padding: 10px 20px;
+}
+
+.settings-page-header h2 {
+  font-size: 22px;
+}
+
+.settings-page-close {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border: 1px solid var(--rule);
+  padding: 5px 10px;
+}
+
+.settings-nav {
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  border-right: 1px solid var(--rule);
+  padding: 12px 0;
+  gap: 0;
+}
+
+.settings-nav-item {
+  position: relative;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 10px 16px;
+  border-left: 2px solid transparent;
+  transition: color 140ms ease, background-color 140ms ease, border-left-color 140ms ease;
+}
+
+.settings-nav-item:hover {
+  background: color-mix(in srgb, var(--ink-paper) 5%, transparent);
+  border-left-color: color-mix(in srgb, var(--ink-paper) 30%, transparent);
+}
+
+.settings-nav-item.active {
+  background: color-mix(in srgb, var(--ink-paper) 7%, transparent);
+  border-left-color: var(--ink-accent);
+  color: var(--ink-paper);
+  font-weight: 600;
+}
+
+.settings-nav-danger { color: var(--red); }
+.settings-nav-danger:hover { border-left-color: var(--red); }
+
+.settings-group-header h3 {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--ink-accent);
+  opacity: 1;
+  margin-bottom: 5px;
+}
+
+.settings-group-header p {
+  font-size: 12px;
+  color: color-mix(in srgb, var(--ink-paper) 45%, transparent);
+  margin-bottom: 12px;
+}
+
+.settings-group-body {
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border: 1px solid var(--rule);
+  border-top: 2px solid color-mix(in srgb, var(--ink-paper) 22%, transparent);
+}
+
+.settings-item + .settings-item {
+  border-top: 1px solid color-mix(in srgb, var(--rule) 65%, transparent);
+}
+
+.settings-item-desc {
+  color: color-mix(in srgb, var(--ink-paper) 40%, transparent);
+}
+
+.settings-row {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+}
+
+/* ── Theme picker helpers ────────────────────────────────────────────────────*/
+
+.theme-light-tag {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 2px 5px;
+  background: none;
+  border: 1px solid color-mix(in srgb, var(--yellow) 45%, transparent);
+  color: var(--yellow);
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border: 0;
+}
+
+.theme-swatches { gap: 2px; }
+
+/* ── Connect dialog ──────────────────────────────────────────────────────────*/
+
+.auth-option,
+.snippet-toggle {
+  border: 1px solid var(--rule);
+  border-left: 2px solid transparent;
+  background: transparent;
+  transition: border-left-color 160ms ease, background-color 160ms ease;
+}
+
+.auth-option:hover,
+.snippet-toggle:hover {
+  background: color-mix(in srgb, var(--ink-paper) 5%, transparent);
+  border-left-color: color-mix(in srgb, var(--ink-paper) 30%, transparent);
+}
+
+.auth-option.selected,
+.snippet-toggle.checked {
+  border-color: var(--rule);
+  border-left-color: var(--ink-accent);
+  background: color-mix(in srgb, var(--ink-accent) 8%, transparent);
+}
+
+.auth-option input[type="radio"],
+.snippet-toggle input[type="checkbox"],
+.remember-row input[type="checkbox"],
+.proc-auto input[type="checkbox"],
+.copilot-attach input[type="checkbox"] {
+  accent-color: var(--ink-accent);
+}
+
+.auth-option-desc,
+.snippet-toggle-preview {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--ink-paper) 40%, transparent);
+}
+
+/* A fingerprint is evidence - it gets the secret-slab treatment. */
+.hostkey-fp {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--ink-accent);
+  padding: 9px 11px;
+  user-select: all;
+}
+
+.connect-host-meta {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: color-mix(in srgb, var(--ink-paper) 42%, transparent);
+}
+
+/* ── SFTP browser ────────────────────────────────────────────────────────────*/
+
+.sftp-path {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  color: var(--ink-paper);
+}
+
+.sftp-list { gap: 0; padding: 0 20px; }
+
+.sftp-row {
+  position: relative;
+  padding: 8px 10px 8px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--rule) 55%, transparent);
+  transition: background-color 140ms ease;
+}
+
+.sftp-row::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--ink-accent);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.sftp-row:hover { background: color-mix(in srgb, var(--ink-paper) 4%, transparent); }
+.sftp-row:hover::before { transform: scaleY(1); }
+
+.sftp-name { font-size: 12.5px; }
+.sftp-row.is-dir .sftp-name { font-weight: 600; }
+.sftp-row.is-dir .sftp-icon { color: var(--ink-accent); }
+
+.sftp-size,
+.sftp-perm {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, var(--ink-paper) 40%, transparent);
+}
+
+.sftp-progress-label,
+.sftp-progress-pct {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+
+/* Deliberately NOT uppercased: this label is a filesystem path, and paths are
+   case-sensitive. The percentage beside it is safe to shout. */
+.sftp-progress-pct { text-transform: uppercase; }
+
+/* ── Progress troughs (SFTP transfer, updater, metrics) ──────────────────────
+ * The empty part of a trough is hatched, so a bar reads as filled-in rather
+ * than as a coloured pill floating in a grey one.
+ */
+
+.sftp-progress-track,
+.metric-track,
+.update-bar {
+  height: 10px;
+  border: 1px solid var(--rule);
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent 0 4px,
+    color-mix(in srgb, var(--ink-paper) 13%, transparent) 4px 8px
+  );
+  overflow: hidden;
+}
+
+.sftp-progress-fill,
+.metric-fill,
+.update-bar-fill {
+  height: 100%;
+  background: var(--ink-accent);
+}
+
+.update-bar-fill { background: var(--ink-verdigris); }
+.metric-fill { background: var(--ink-verdigris); }
+.metric-fill.warn { background: var(--yellow); }
+.metric-fill.danger { background: var(--red); }
+
+/* ── Docker ──────────────────────────────────────────────────────────────────*/
+
+.docker-tabs {
+  border-bottom: 1px solid var(--rule);
+  padding: 0 12px;
+  gap: 0;
+}
+
+.docker-tab {
+  position: relative;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 11px 14px;
+  border-bottom: 0;
+  color: color-mix(in srgb, var(--ink-paper) 48%, transparent);
+}
+
+.docker-tab::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--ink-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.docker-tab:hover { color: var(--ink-paper); }
+.docker-tab:hover::after { transform: scaleX(1); }
+.docker-tab.active { color: var(--ink-paper); border-bottom-color: transparent; }
+.docker-tab.active::after { transform: scaleX(1); }
+
+.docker-toolbar { border-bottom: 1px solid var(--rule); }
+
+.docker-chip {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border: 1px solid var(--rule);
+  background: transparent;
+  color: color-mix(in srgb, var(--ink-paper) 55%, transparent);
+}
+
+.docker-chip:hover { color: var(--ink-paper); border-color: color-mix(in srgb, var(--ink-paper) 34%, var(--rule)); }
+
+.docker-chip.active {
+  background: var(--ink-paper);
+  border-color: var(--ink-paper);
+  color: var(--bg);
+}
+
+.docker-count {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-verdigris);
+}
+
+.docker-count-dot {
+  width: 7px;
+  height: 7px;
+  background: var(--ink-verdigris);
+  box-shadow: none;
+  animation: carrier 2.4s ease-out infinite;
+}
+
+.docker-list { gap: 0; padding: 0 14px; }
+
+/* A container is a slab row, not a floating card. */
+.docker-card {
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--rule) 60%, transparent);
+  border-left: 2px solid transparent;
+  background: transparent;
+  transition: border-left-color 160ms ease, background-color 160ms ease;
+}
+
+.docker-card:hover,
+.docker-card[data-open="true"] {
+  border-left-color: var(--ink-accent);
+  background: color-mix(in srgb, var(--ink-paper) 4%, transparent);
+  box-shadow: none;
+}
+
+/* Read-only rows (images/volumes/networks) offer no affordance. */
+.docker-card:has(.docker-row-main.static):hover {
+  border-left-color: transparent;
+  background: transparent;
+}
+
+.docker-dot {
+  width: 8px;
+  height: 8px;
+  box-shadow: none;
+}
+
+.docker-dot.running { background: var(--ink-verdigris); animation: carrier 2.4s ease-out infinite; }
+.docker-dot.paused { background: var(--yellow); }
+.docker-dot.stopped { background: color-mix(in srgb, var(--ink-paper) 28%, transparent); opacity: 1; }
+
+.docker-name { font-size: 12.5px; }
+
+.docker-image,
+.docker-id {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--ink-paper) 40%, transparent);
+}
+
+.docker-status {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink-paper) 45%, transparent);
+}
+
+.docker-iconbtn {
+  width: 26px;
+  height: 26px;
+  background: transparent;
+  border: 1px solid var(--rule);
+  color: color-mix(in srgb, var(--ink-paper) 55%, transparent);
+}
+
+.docker-iconbtn:hover {
+  background: color-mix(in srgb, var(--ink-paper) 9%, transparent);
+  border-color: color-mix(in srgb, var(--ink-paper) 34%, var(--rule));
+  color: var(--ink-paper);
+}
+
+.docker-iconbtn.start {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--green) 45%, transparent);
+  color: var(--ink-verdigris);
+}
+.docker-iconbtn.start:hover {
+  background: color-mix(in srgb, var(--green) 16%, transparent);
+  border-color: var(--ink-verdigris);
+}
+.docker-iconbtn.danger:hover {
+  background: color-mix(in srgb, var(--red) 16%, transparent);
+  border-color: var(--red);
+  color: var(--red);
+}
+
+/* Published ports are facts about the machine - hatched, like auth tags. */
+.docker-port {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  padding: 2px 6px;
+  border: 1px solid var(--rule);
+  color: color-mix(in srgb, var(--ink-paper) 55%, transparent);
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent 0 4px,
+    color-mix(in srgb, var(--ink-paper) 6%, transparent) 4px 8px
+  );
+}
+
+.docker-empty,
+.copilot-empty,
+.palette-empty {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  line-height: 2;
+  color: color-mix(in srgb, var(--ink-paper) 34%, transparent);
+}
+
+.docker-logs-body {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--bg);
+}
+
+/* ── Metrics ─────────────────────────────────────────────────────────────────*/
+
+.metrics-live {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: var(--ink-verdigris);
+}
+
+.metrics-live-dot {
+  width: 7px;
+  height: 7px;
+  background: var(--ink-verdigris);
+  animation: carrier 2.4s ease-out infinite;
+}
+
+.metric-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-paper);
+}
+
+.metric-value,
+.metric-stat-value {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--ink-paper) 62%, transparent);
+}
+
+.metric-stat-value { font-size: 13px; color: var(--ink-paper); }
+.metric-stats { border-top: 1px solid var(--rule); }
+
+/* ── Processes ───────────────────────────────────────────────────────────────*/
+
+.proc-list { border: 1px solid var(--rule); }
+
+.proc-table { font-family: var(--font-mono); font-size: 11px; }
+
+.proc-table thead th {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink-paper) 50%, transparent);
+  background: var(--surface);
+  border-bottom: 1px solid var(--ink-accent);
+  padding: 9px 10px;
+}
+
+.proc-table td {
+  border-bottom: 1px solid color-mix(in srgb, var(--rule) 55%, transparent);
+  padding: 7px 10px;
+}
+
+.proc-table tbody tr { transition: background-color 140ms ease; }
+.proc-table tbody tr:hover { background: color-mix(in srgb, var(--ink-paper) 4%, transparent); }
+
+/* The hover bar hangs off the first cell, not the row: a pseudo-element on a
+ * <tr> is laid out as an anonymous table-cell in Gecko and pushes every real
+ * cell one column right, even when absolutely positioned. */
+.proc-table tbody td:first-child { position: relative; }
+.proc-table tbody td:first-child::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--ink-accent);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.proc-table tbody tr:hover td:first-child::before { transform: scaleY(1); }
+
+.proc-cmd { color: color-mix(in srgb, var(--ink-paper) 45%, transparent); }
+.proc-table .hot { color: var(--red); font-weight: 700; }
+
+.proc-auto {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* ── Command palette ─────────────────────────────────────────────────────────*/
+
+.palette-overlay {
+  background: color-mix(in srgb, var(--bg) 74%, transparent);
+  padding-top: 14vh;
+}
+
+.palette {
+  border: 1px solid var(--rule);
+  border-top: 3px solid var(--ink-accent);
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  box-shadow: 14px 14px 0 -1px color-mix(in srgb, var(--bg) 85%, transparent);
+  animation: cut-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.palette-input {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  background: transparent;
+  padding: 15px 16px;
+}
+
+.palette-input:focus { box-shadow: inset 0 -2px 0 0 var(--ink-accent); }
+
+.palette-list { padding: 0; }
+
+.palette-group {
+  padding: 12px 14px 5px;
+  color: var(--ink-accent);
+  letter-spacing: 0.26em;
+}
+
+.palette-item {
+  position: relative;
+  padding: 9px 14px;
+  border-left: 2px solid transparent;
+  transition: background-color 140ms ease, border-left-color 140ms ease;
+}
+
+.palette-item.active {
+  background: color-mix(in srgb, var(--ink-paper) 6%, transparent);
+  border-left-color: var(--ink-accent);
+}
+
+.palette-item-title { font-size: 13px; }
+
+.palette-item-sub {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: color-mix(in srgb, var(--ink-paper) 38%, transparent);
+}
+
+/* ── Port forwarding ─────────────────────────────────────────────────────────*/
+
+.fwd-trigger:hover,
+.fwd-trigger.active {
+  background: color-mix(in srgb, var(--ink-paper) 9%, transparent);
+  border-color: transparent;
+  color: var(--ink-paper);
+}
+
+.fwd-trigger.active { box-shadow: inset 0 -2px 0 0 var(--ink-accent); }
+
+.fwd-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 1px 5px;
+  background: var(--ink-verdigris);
+  color: var(--bg);
+}
+
+.fwd-item::before { display: none; }
+
+.fwd-status-dot {
+  width: 7px;
+  height: 7px;
+  background: color-mix(in srgb, var(--ink-paper) 25%, transparent);
+}
+
+.fwd-item.active .fwd-status-dot {
+  background: var(--ink-verdigris);
+  animation: carrier 2.4s ease-out infinite;
+}
+
+.fwd-label {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+.fwd-meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: color-mix(in srgb, var(--ink-paper) 40%, transparent);
+}
+
+.fwd-toggle {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  background: transparent;
+  border: 1px solid var(--rule);
+  color: color-mix(in srgb, var(--ink-paper) 60%, transparent);
+}
+
+.fwd-toggle.start:hover {
+  background: color-mix(in srgb, var(--green) 15%, transparent);
+  border-color: var(--ink-verdigris);
+  color: var(--ink-verdigris);
+}
+
+.fwd-toggle.stop {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--red) 55%, transparent);
+  color: var(--red);
+}
+.fwd-toggle.stop:hover { background: color-mix(in srgb, var(--red) 16%, transparent); }
+
+.fwd-kind-tag {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  background: none;
+  border: 1px solid var(--rule);
+  color: color-mix(in srgb, var(--ink-paper) 50%, transparent);
+  padding: 1px 5px;
+}
+
+.fwd-arrow { font-family: var(--font-mono); color: var(--ink-accent); }
+
+/* ── Pane name ───────────────────────────────────────────────────────────────*/
+
+.pane-name-label,
+.pane-name-input {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.pane-name-label:hover {
+  background: color-mix(in srgb, var(--ink-paper) 9%, transparent);
+  border-color: transparent;
+  color: var(--ink-paper);
+}
+
+.pane-name-input {
+  background: var(--bg);
+  border: 1px solid var(--ink-accent);
+}
+
+/* ── Keyboard shortcuts ──────────────────────────────────────────────────────*/
+
+.keybind-combo {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  padding: 5px 10px;
+}
+
+.keybind-combo:hover { border-color: var(--ink-accent); }
+
+.keybind-combo.recording {
+  border-color: var(--ink-accent);
+  color: var(--ink-accent);
+  box-shadow: inset 0 -2px 0 0 var(--ink-accent);
+}
+
+.keybind-combo kbd { font-family: var(--font-mono); }
+
+.keybind-conflict {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.16em;
+  border: 1px solid var(--red);
+  padding: 2px 5px;
+}
+
+/* ── Auto-reconnect banner ───────────────────────────────────────────────────*/
+
+.term-reconnect {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--yellow) 12%, var(--surface));
+  border-bottom: 1px solid var(--yellow);
+  border-left: 3px solid var(--yellow);
+}
+
+.term-reconnect.failed {
+  background: color-mix(in srgb, var(--red) 12%, var(--surface));
+  border-bottom-color: var(--red);
+  border-left-color: var(--red);
+}
+
+/* ── AI Copilot ──────────────────────────────────────────────────────────────*/
+
+.copilot-role {
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: var(--ink-accent);
+}
+
+.copilot-msg.user .copilot-role { color: color-mix(in srgb, var(--ink-paper) 45%, transparent); }
+
+/* What you said is quoted stock: ruled off, not bubbled. */
+.copilot-msg.user .copilot-body {
+  background: color-mix(in srgb, var(--ink-paper) 5%, transparent);
+  border-left: 2px solid color-mix(in srgb, var(--ink-paper) 30%, transparent);
+  padding: 9px 13px;
+}
+
+.copilot-thinking {
+  border-left: 2px solid var(--rule);
+  font-style: normal;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.7;
+  color: color-mix(in srgb, var(--ink-paper) 38%, transparent);
+}
+
+.copilot-thinking-label { color: color-mix(in srgb, var(--ink-paper) 32%, transparent); }
+
+.copilot-cursor {
+  width: 8px;
+  height: 15px;
+  background: var(--ink-accent);
+}
+
+.copilot-code {
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--ink-accent);
+}
+
+.copilot-code-bar {
+  background: color-mix(in srgb, var(--ink-paper) 5%, transparent);
+  border-bottom: 1px solid var(--rule);
+}
+
+.copilot-code-lang {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-accent);
+}
+
+.copilot-code pre { font-family: var(--font-mono); background: var(--bg); }
+
+.copilot-model-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: none;
+  border: 1px solid var(--rule);
+  color: color-mix(in srgb, var(--ink-paper) 50%, transparent);
+  padding: 3px 7px;
+}
+
+.copilot-input { border-top: 1px solid var(--rule); }
+
+.copilot-attach {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.ai-oauth-detail {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--ink-accent);
+}
+
+/* ── About modal ─────────────────────────────────────────────────────────────*/
+
+.about-body { align-items: flex-start; text-align: left; padding: 22px 24px 26px; }
+
+.about-logo {
+  width: auto;
+  height: auto;
+  background: none;
+  color: var(--ink-accent);
+  margin-bottom: 2px;
+}
+
+.about-name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 40px;
+  line-height: 0.84;
+  letter-spacing: -0.005em;
+  text-transform: uppercase;
+}
+
+.about-version {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  background: none;
+  border: 1px solid var(--rule);
+  color: color-mix(in srgb, var(--ink-paper) 55%, transparent);
+  padding: 3px 7px;
+}
+
+.about-desc {
+  max-width: none;
+  color: color-mix(in srgb, var(--ink-paper) 55%, transparent);
+  line-height: 1.65;
+}
+
+.about-meta,
+.about-update {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  justify-content: flex-start;
+}
+
+.about-update.available { color: var(--ink-verdigris); }
+
+/* The updater's "there's a newer cut" mark. */
+.update-badge {
+  width: 7px;
+  height: 7px;
+  background: var(--ink-verdigris);
+  border: 1px solid var(--surface);
+}
+
+.settings-update { color: var(--ink-verdigris); }
+.settings-update:hover { background: color-mix(in srgb, var(--green) 14%, transparent); }
+.settings-update::before { background: var(--ink-verdigris); }
+
+/* ── SSH-agent auth tag ──────────────────────────────────────────────────────*/
+
+.auth-badge.agent {
+  color: color-mix(in srgb, var(--yellow) 80%, var(--ink-paper));
+  border-color: color-mix(in srgb, var(--yellow) 32%, var(--rule));
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent 0 4px,
+    color-mix(in srgb, var(--ink-paper) 6%, transparent) 4px 8px
+  );
+}
+
+/* ── Toast ───────────────────────────────────────────────────────────────────
+ * Defined here rather than in the shell section so it outranks the base rule
+ * further up the file.
+ */
+
+.app-toast {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 11px 16px;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--ink-verdigris);
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  box-shadow: 8px 8px 0 -1px color-mix(in srgb, var(--bg) 85%, transparent);
+  /* Needs its own keyframes: the toast is centred with translateX(-50%), and a
+     generic reel-in would overwrite that transform and shunt it off-centre. */
+  animation: toast-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* ── Polarity ────────────────────────────────────────────────────────────────
+ * Three of the fifteen themes are light. Everything above is written from the
+ * ink slots and flips on its own; these few can't be, because they need a
+ * *direction* - down into shadow, or up into light - not a colour. applyTheme()
+ * stamps data-theme-dark on <html> so they can ask which way is down.
+ */
+
+/* Dark themes: an input is a hole cut deeper than the page. */
+:root[data-theme-dark="1"] :is(input, textarea, select, .unlock-input, .sftp-rename-input) {
+  background: color-mix(in srgb, var(--bg) 82%, #000);
+}
+
+/* Light themes: a scrim mixed from a white --bg dims nothing, and an offset
+   shadow mixed from it is invisible. Both have to come off the ink instead. */
+:root[data-theme-dark="0"] .modal-overlay {
+  background: color-mix(in srgb, var(--text) 42%, transparent);
+}
+
+:root[data-theme-dark="0"] :is(.export-dropdown, .settings-dropdown, .fwd-dropdown,
+  .term-search, .term-sel-menu, .context-menu, .app-toast) {
+  box-shadow: 6px 6px 0 -1px color-mix(in srgb, var(--text) 16%, transparent);
+}
+
+:root[data-theme-dark="0"] .modal {
+  box-shadow: 14px 14px 0 -1px color-mix(in srgb, var(--text) 14%, transparent);
+}
+
+:root[data-theme-dark="0"] .unlock-card {
+  box-shadow: 16px 16px 0 -1px color-mix(in srgb, var(--text) 13%, transparent);
+}
+
+/* Grain is a film artefact. On paper-white it stops reading as texture and
+   starts reading as a dirty screen, so it's pulled most of the way down. */
+:root[data-theme-dark="0"] :is(.app-root, .unlock-screen)::after {
+  opacity: 0.14;
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────────*/
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    /* Delays must go too: with animation-fill-mode "both", a staggered element
+       sits at its from-state (opacity 0) for the whole delay - content that is
+       invisible for half a second is not a reduced-motion experience. */
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .unlock-card,
+  .unlock-card > *,
+  .app-header,
+  .ink-band,
+  .sidebar,
+  .main-area,
+  .host-list .host-item,
+  .home-grid > .home-card {
+    opacity: 1;
+    transform: none;
+    clip-path: none;
+  }
+
+  /* An endless loop has no still frame worth keeping. */
+  .filmstrip { animation: none; }
+}
+

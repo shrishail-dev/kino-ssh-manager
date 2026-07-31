@@ -4,7 +4,16 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
     <title>Kino SSH Manager</title>
+    <!-- The display and UI faces are on screen from the first paint (masthead,
+         unlock title), so they're fetched in parallel with the JS bundle rather
+         than after the CSS is parsed. Mono is not preloaded: it first appears
+         below the fold, in labels and host addresses. -->
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+          href="/fonts/bigshoulders-latin.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+          href="/fonts/chivo-latin.woff2" />
   </head>
 
   <body>

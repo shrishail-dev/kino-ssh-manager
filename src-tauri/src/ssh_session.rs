@@ -75,61 +75,146 @@ impl AsyncWrite for NetStream {
     }
 }
 
+/// Turn an established relay WebSocket into a byte stream SSH can run over:
+/// binary frames in both directions, bridged onto an in-memory duplex pipe.
+fn bridge_agent_ws(
+    ws_stream: tokio_tungstenite::WebSocketStream<
+        tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>,
+    >,
+) -> Result<NetStream, String> {
+    let (mut ws_tx, mut ws_rx) = futures_util::StreamExt::split(ws_stream);
+    let (client_stream, backend_stream) = tokio::io::duplex(65536);
+    let (mut backend_rx, mut backend_tx) = tokio::io::split(backend_stream);
+
+    tokio::spawn(async move {
+        use tokio::io::AsyncWriteExt;
+        while let Some(msg) = futures_util::StreamExt::next(&mut ws_rx).await {
+            if let Ok(tokio_tungstenite::tungstenite::protocol::Message::Binary(data)) = msg {
+                if backend_tx.write_all(&data).await.is_err() {
+                    break;
+                }
+            }
+        }
+    });
+
+    tokio::spawn(async move {
+        use futures_util::SinkExt;
+        use tokio::io::AsyncReadExt;
+        let mut buf = [0u8; 8192];
+        loop {
+            match backend_rx.read(&mut buf).await {
+                Ok(0) => break,
+                Ok(n) => {
+                    if ws_tx
+                        .send(tokio_tungstenite::tungstenite::protocol::Message::Binary(
+                            buf[..n].into(),
+                        ))
+                        .await
+                        .is_err()
+                    {
+                        break;
+                    }
+                }
+                Err(_) => break,
+            }
+        }
+    });
+
+    Ok(NetStream::Duplex(client_stream))
+}
+
 pub async fn connect_to_host(host: &Host) -> Result<NetStream, String> {
     if host.connection_mode.as_deref() == Some("agent") {
-        let relay_url = host
-            .relay_url
-            .as_deref()
-            .ok_or("Relay URL not provided for Agent connection mode")?;
         let agent_id = host
             .agent_id
             .as_deref()
             .ok_or("Agent ID not provided for Agent connection mode")?;
 
+        // Kino Cloud host: no relay details stored at all - one call to
+        // kino-control returns a fresh short-lived manager JWT plus where the
+        // agent is parked (with an in-memory fallback cache for outages).
+        let is_cloud = host.relay_url.as_deref().unwrap_or("").is_empty()
+            && host.control_url.as_deref().unwrap_or("").is_empty()
+            && host.relay_token.as_deref().unwrap_or("").is_empty();
+        if is_cloud {
+            let agent = agent_id.to_string();
+            let (token, relay_url) =
+                tokio::task::spawn_blocking(move || crate::cloud::connect_info(&agent))
+                    .await
+                    .map_err(|e| format!("Cloud connect task failed: {}", e))??;
+            let ws_url = format!("{}/ws/manager/request?agent_id={}", relay_url, agent_id);
+            let mut request =
+                tokio_tungstenite::tungstenite::client::IntoClientRequest::into_client_request(&ws_url)
+                    .map_err(|e| format!("Invalid relay URL: {}", e))?;
+            let value = format!("Bearer {}", token)
+                .parse()
+                .map_err(|e| format!("Invalid connection token: {}", e))?;
+            request
+                .headers_mut()
+                .insert(tokio_tungstenite::tungstenite::http::header::AUTHORIZATION, value);
+            let (ws_stream, _) = tokio_tungstenite::connect_async(request)
+                .await
+                .map_err(|e| format!("Failed to connect to relay: {}", e))?;
+            return bridge_agent_ws(ws_stream);
+        }
+
+        // Which relay to dial: ask kino-control where the agent is parked
+        // (discovery mode), falling back to the host's saved relay URL if the
+        // lookup fails - so a control outage degrades instead of locking you out.
+        let relay_url = match host.control_url.as_deref().filter(|c| !c.is_empty()) {
+            Some(control) => {
+                let lookup_url = format!(
+                    "{}/api/agents/{}/relay",
+                    control.trim_end_matches('/'),
+                    agent_id
+                );
+                let bearer = format!("Bearer {}", host.relay_token.as_deref().unwrap_or(""));
+                let located = tokio::task::spawn_blocking(move || -> Option<String> {
+                    let body: serde_json::Value = ureq::get(&lookup_url)
+                        .set("Authorization", &bearer)
+                        .timeout(std::time::Duration::from_secs(5))
+                        .call()
+                        .ok()?
+                        .into_json()
+                        .ok()?;
+                    body["relay_url"].as_str().map(str::to_string)
+                })
+                .await
+                .map_err(|e| format!("Relay lookup task failed: {}", e))?;
+                match located {
+                    Some(url) => url,
+                    None => host
+                        .relay_url
+                        .clone()
+                        .filter(|u| !u.is_empty())
+                        .ok_or("kino-control could not locate the agent and this host has no fallback Relay URL")?,
+                }
+            }
+            None => host
+                .relay_url
+                .clone()
+                .filter(|u| !u.is_empty())
+                .ok_or("Relay URL not provided for Agent connection mode")?,
+        };
+
         let ws_url = format!("{}/ws/manager/request?agent_id={}", relay_url, agent_id);
-        let (ws_stream, _) = tokio_tungstenite::connect_async(&ws_url)
+        // Token travels as a header, not a query parameter, so it stays out of
+        // relay/proxy access logs.
+        let mut request = tokio_tungstenite::tungstenite::client::IntoClientRequest::into_client_request(&ws_url)
+            .map_err(|e| format!("Invalid relay URL: {}", e))?;
+        if let Some(token) = host.relay_token.as_deref().filter(|t| !t.is_empty()) {
+            let value = format!("Bearer {}", token)
+                .parse()
+                .map_err(|e| format!("Invalid relay token: {}", e))?;
+            request
+                .headers_mut()
+                .insert(tokio_tungstenite::tungstenite::http::header::AUTHORIZATION, value);
+        }
+        let (ws_stream, _) = tokio_tungstenite::connect_async(request)
             .await
             .map_err(|e| format!("Failed to connect to relay: {}", e))?;
 
-        let (mut ws_tx, mut ws_rx) = futures_util::StreamExt::split(ws_stream);
-        let (client_stream, backend_stream) = tokio::io::duplex(65536);
-        let (mut backend_rx, mut backend_tx) = tokio::io::split(backend_stream);
-
-        tokio::spawn(async move {
-            use tokio::io::AsyncWriteExt;
-            while let Some(msg) = futures_util::StreamExt::next(&mut ws_rx).await {
-                if let Ok(tokio_tungstenite::tungstenite::protocol::Message::Binary(data)) = msg {
-                    if backend_tx.write_all(&data).await.is_err() {
-                        break;
-                    }
-                }
-            }
-        });
-
-        tokio::spawn(async move {
-            use futures_util::SinkExt;
-            use tokio::io::AsyncReadExt;
-            let mut buf = [0u8; 8192];
-            loop {
-                match backend_rx.read(&mut buf).await {
-                    Ok(0) => break,
-                    Ok(n) => {
-                        if ws_tx
-                            .send(tokio_tungstenite::tungstenite::protocol::Message::Binary(
-                                buf[..n].into(),
-                            ))
-                            .await
-                            .is_err()
-                        {
-                            break;
-                        }
-                    }
-                    Err(_) => break,
-                }
-            }
-        });
-
-        Ok(NetStream::Duplex(client_stream))
+        bridge_agent_ws(ws_stream)
     } else if let Some(jump) = host.jump.as_deref() {
         // Tunnel to the target through a bastion: open an SSH session to the
         // jump host, then a direct-tcpip channel from it out to host:port. Any

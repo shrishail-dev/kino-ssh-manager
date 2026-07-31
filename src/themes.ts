@@ -21,6 +21,29 @@ export interface Theme {
 }
 
 export const THEMES: Theme[] = [
+  // The house theme, shared with the kino-control web UI ("Kino Projection").
+  // Two inks on bitumen black: unbleached paper and one scarce vermilion.
+  // Verdigris and marigold exist only to carry status that red and cream can't.
+  {
+    id: "kino-projection",
+    name: "Kino Projection",
+    dark: true,
+    ui: {
+      bg: "#100d0b", surface: "#191411", overlay: "#241d19",
+      muted: "#352c26", subtle: "#857a6d", text: "#ede3d2", subtext: "#b8ac9b",
+      // `blue` is the accent slot the chrome reads from - here it's vermilion.
+      blue: "#e5452b", green: "#63b39a", red: "#e5452b", yellow: "#e0a13c", mauve: "#7f97bd",
+      btnPrimaryFg: "#100d0b",
+    },
+    term: {
+      background: "#100d0b", foreground: "#ede3d2",
+      cursor: "#e5452b", cursorAccent: "#100d0b",
+      black: "#352c26", red: "#e5452b", green: "#63b39a", yellow: "#e0a13c",
+      blue: "#7f97bd", magenta: "#c08497", cyan: "#7fb5ab", white: "#c9bfae",
+      brightBlack: "#574a41", brightRed: "#f2664c", brightGreen: "#7fc9b0", brightYellow: "#f0b95a",
+      brightBlue: "#9db3d4", brightMagenta: "#d3a0ae", brightCyan: "#9acdc3", brightWhite: "#ede3d2",
+    },
+  },
   {
     id: "catppuccin-mocha",
     name: "Catppuccin Mocha",
@@ -292,6 +315,10 @@ export const THEMES: Theme[] = [
 export function applyTheme(theme: Theme): void {
   const r = document.documentElement.style;
   const u = theme.ui;
+  // Polarity hook for the rules that can't be written from the ink slots alone
+  // - a shadow mixed from --bg is invisible on a light theme, and a scrim mixed
+  // from a white --bg doesn't dim anything. See "Polarity" in index.css.
+  document.documentElement.dataset.themeDark = theme.dark ? "1" : "0";
   r.setProperty("--bg", u.bg);
   r.setProperty("--surface", u.surface);
   r.setProperty("--overlay", u.overlay);

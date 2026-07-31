@@ -3,7 +3,7 @@ name = "ssh-manager"
 version = "0.6.1"
 description = "Kino SSH Manager - Secure SSH credential manager"
 authors = ["Kino SSH Manager contributors"]
-license = "MIT"
+license = "GPL-3.0-only"
 edition = "2021"
 
 [lib]

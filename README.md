@@ -31,9 +31,14 @@ opening any inbound port:
 - A companion **[kino-agent](https://github.com/Samarthegde/kino-agent)** runs on
   the target machine and makes an *outbound* connection to a public
   **[kino-relay](https://github.com/Samarthegde/kino-relay)** you control.
-- In the host editor, pick the **Kino Agent** connection mode and enter the relay
-  URL (`wss://...`) and an agent id instead of a hostname. The editor shows the
-  exact command to run on the target to install the agent.
+- **Kino Cloud (easiest):** paste your account key under Settings once, then
+  the host editor's agent mode becomes a machine picker - add a machine, run
+  the one-line install command it shows, connect. Relay discovery, tokens, and
+  rotation are handled automatically; the app stores only the agent id.
+- **Self-hosted (advanced):** enter a relay URL (`wss://...`) and agent id
+  yourself - plus a relay token if the relay requires auth, and/or a
+  kino-control URL for relay discovery. The editor shows the exact command to
+  run on the target to install the agent.
 - The manager connects through the relay to that agent, which forwards to the
   host's local SSH daemon. The SSH session remains **end-to-end encrypted** - the
   relay only moves bytes and never sees your credentials, and the host's SSH key
@@ -79,4 +84,4 @@ Contributions are welcome - see [CONTRIBUTING.md](CONTRIBUTING.md). Because this
 
 ## License
 
-[MIT](LICENSE)
+[GNU GPL-3.0](LICENSE)

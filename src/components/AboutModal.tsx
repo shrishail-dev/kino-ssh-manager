@@ -154,7 +154,7 @@ export function AboutModal({ onClose }: Props) {
           )}
 
           <div className="about-meta">
-            <span>MIT Licensed</span>
+            <span>GPL-3.0 Licensed</span>
             <span className="about-dot">·</span>
             <span>Tauri · React · russh</span>
           </div>

@@ -41,6 +41,10 @@ export interface Host {
   connection_mode?: string | null;
   agent_id?: string | null;
   relay_url?: string | null;
+  /** Bearer token for the relay, when it requires auth. */
+  relay_token?: string | null;
+  /** kino-control URL; when set the relay is discovered instead of fixed. */
+  control_url?: string | null;
   /** Optional proxy to dial the host through: "socks5" or "http". */
   proxy_type?: ProxyType | string | null;
   proxy_host?: string | null;
@@ -141,6 +145,31 @@ export interface ProcessInfo {
 export type KillSignal = "TERM" | "KILL" | "HUP" | "INT";
 
 export type AiProvider = "openrouter";
+
+export interface CloudConfigView {
+  control_url: string;
+  key_set: boolean;
+}
+
+export interface CloudConfigInput {
+  control_url: string;
+  /** Empty keeps the stored key (it is never echoed back to the UI). */
+  account_key: string;
+}
+
+export interface CloudMachine {
+  agent_id: string;
+  name: string;
+  created_at: number;
+  relay_url?: string | null;
+  last_seen?: number | null;
+}
+
+export interface CloudAddedMachine {
+  agent_id: string;
+  name: string;
+  install_command: string;
+}
 
 export interface AiConfigView {
   configured: boolean;
@@ -304,6 +333,11 @@ interface VaultStore {
   processesList: (sessionId: string, local: boolean) => Promise<ProcessInfo[]>;
   processKill: (sessionId: string, local: boolean, pid: number, signal: KillSignal) => Promise<void>;
   aiGetConfig: () => Promise<AiConfigView | null>;
+  cloudGetConfig: () => Promise<CloudConfigView | null>;
+  cloudSetConfig: (config: CloudConfigInput) => Promise<CloudConfigView>;
+  cloudListMachines: () => Promise<CloudMachine[]>;
+  cloudAddMachine: (name: string) => Promise<CloudAddedMachine>;
+  cloudRemoveMachine: (agentId: string) => Promise<void>;
   aiSetConfig: (config: AiConfigInput) => Promise<AiConfigView>;
   aiListModels: () => Promise<AiModelInfo[]>;
   /** Streams the reply over `ai-delta-<requestId>` events; see CopilotPanel. */
@@ -535,7 +569,7 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
   activePaneId: "default",
   paneNames: {},
   activeTabIds: { "default": null },
-  theme: localStorage.getItem("ssh-mgr:theme") ?? "catppuccin-mocha",
+  theme: localStorage.getItem("ssh-mgr:theme") ?? "kino-projection",
   idleLockMinutes: Number(localStorage.getItem("ssh-mgr:idle-lock") ?? "0"),
   defaultRelayUrl: localStorage.getItem("ssh-mgr:relay-url") ?? "",
   relayEnabled: initialRelayEnabled(),
@@ -1219,6 +1253,11 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
     invoke<void>("process_kill", { sessionId, local, pid, signal }),
 
   aiGetConfig: () => invoke<AiConfigView | null>("ai_get_config"),
+  cloudGetConfig: () => invoke<CloudConfigView | null>("cloud_get_config"),
+  cloudSetConfig: (config) => invoke<CloudConfigView>("cloud_set_config", { config }),
+  cloudListMachines: () => invoke<CloudMachine[]>("cloud_list_machines"),
+  cloudAddMachine: (name) => invoke<CloudAddedMachine>("cloud_add_machine", { name }),
+  cloudRemoveMachine: (agentId) => invoke<void>("cloud_remove_machine", { agentId }),
   aiSetConfig: (config) => invoke<AiConfigView>("ai_set_config", { config }),
   aiListModels: () => invoke<AiModelInfo[]>("ai_list_models"),
   aiSend: (requestId, system, messages) =>

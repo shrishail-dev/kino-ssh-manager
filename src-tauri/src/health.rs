@@ -107,6 +107,8 @@ mod tests {
             connection_mode: None,
             agent_id: None,
             relay_url: None,
+            relay_token: None,
+            control_url: None,
             proxy_type: None,
             proxy_host: None,
             proxy_port: None,

@@ -174,6 +174,8 @@ mod tests {
             connection_mode: mode.map(Into::into),
             agent_id: agent_id.map(Into::into),
             relay_url: None,
+            relay_token: None,
+            control_url: None,
             proxy_type: None,
             proxy_host: None,
             proxy_port: None,

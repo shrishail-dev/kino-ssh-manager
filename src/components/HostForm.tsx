@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import { DefaultAuth, Host, PortForward, useVaultStore } from "../store";
+import { CloudMachine, DefaultAuth, Host, PortForward, useVaultStore } from "../store";
 import { OS_OPTIONS, OsIcon } from "./OsIcon";
 
 interface Props {
@@ -54,6 +54,66 @@ export function HostForm({ host, onClose }: Props) {
   const jumpCandidates = hosts.filter((h) => h.id && h.id !== host?.id);
   const [agentId, setAgentId] = useState(host?.agent_id ?? "");
   const [relayUrl, setRelayUrl] = useState(host?.relay_url ?? useVaultStore.getState().defaultRelayUrl);
+  const [relayToken, setRelayToken] = useState(host?.relay_token ?? "");
+  const [controlUrl, setControlUrl] = useState(host?.control_url ?? "");
+
+  // Kino Cloud: configured in Settings; when present, agent mode becomes a
+  // machine picker and the manual relay fields fold into "Advanced".
+  const { cloudGetConfig, cloudListMachines, cloudAddMachine } = useVaultStore();
+  const [cloudReady, setCloudReady] = useState(false);
+  const [machines, setMachines] = useState<CloudMachine[]>([]);
+  const [cloudError, setCloudError] = useState("");
+  const [newMachineName, setNewMachineName] = useState("");
+  const [installCmd, setInstallCmd] = useState("");
+  const [addingMachine, setAddingMachine] = useState(false);
+
+  useEffect(() => {
+    if (connectionMode !== "agent") return;
+    cloudGetConfig()
+      .then((c) => {
+        const ready = !!c && c.key_set && !!c.control_url;
+        setCloudReady(ready);
+        if (ready) refreshMachines();
+      })
+      .catch(() => setCloudReady(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connectionMode]);
+
+  function refreshMachines() {
+    setCloudError("");
+    cloudListMachines()
+      .then(setMachines)
+      .catch((e) => setCloudError(String(e)));
+  }
+
+  function pickMachine(id: string) {
+    setAgentId(id);
+    // A cloud host stores only the agent id - relay details are looked up at
+    // connect time, so stale ones must not linger from a previous config.
+    setRelayUrl("");
+    setControlUrl("");
+    setRelayToken("");
+    const machine = machines.find((m) => m.agent_id === id);
+    if (machine && !name) setName(machine.name);
+  }
+
+  async function handleAddMachine() {
+    if (!newMachineName.trim()) return;
+    setAddingMachine(true);
+    setCloudError("");
+    try {
+      const added = await cloudAddMachine(newMachineName.trim());
+      setInstallCmd(added.install_command);
+      setNewMachineName("");
+      refreshMachines();
+      pickMachine(added.agent_id);
+      if (!name) setName(added.name);
+    } catch (e) {
+      setCloudError(String(e));
+    } finally {
+      setAddingMachine(false);
+    }
+  }
 
   // Proxy (dial-through) config - only applies to direct connections.
   const [proxyType, setProxyType] = useState<string>(host?.proxy_type ?? "");
@@ -159,6 +219,8 @@ export function HostForm({ host, onClose }: Props) {
           connection_mode: connectionMode,
           agent_id: agentId || null,
           relay_url: relayUrl || null,
+          relay_token: relayToken || null,
+          control_url: controlUrl || null,
           proxy_type: connectionMode === "direct" && proxyType ? proxyType : null,
           proxy_host: connectionMode === "direct" && proxyType ? proxyHost || null : null,
           proxy_port: connectionMode === "direct" && proxyType ? proxyPort : null,
@@ -187,8 +249,12 @@ export function HostForm({ host, onClose }: Props) {
       fail(STEP_CONNECTION, "Name, hostname, and username are required");
       return;
     }
-    if (connectionMode === "agent" && (!name || !agentId || !relayUrl || !username)) {
-      fail(STEP_CONNECTION, "Name, Agent ID, Relay URL, and username are required");
+    if (connectionMode === "agent" && (!name || !agentId || !username)) {
+      fail(STEP_CONNECTION, "Name, Agent ID, and username are required");
+      return;
+    }
+    if (connectionMode === "agent" && !relayUrl && !controlUrl && !cloudReady) {
+      fail(STEP_CONNECTION, "Pick a Kino Cloud machine, or enter a Relay URL / kino-control URL");
       return;
     }
     if (defaultAuth === "Password" && !password) {
@@ -226,6 +292,8 @@ export function HostForm({ host, onClose }: Props) {
         connection_mode: connectionMode,
         agent_id: agentId || null,
         relay_url: relayUrl || null,
+        relay_token: relayToken || null,
+        control_url: controlUrl || null,
         jump_host: connectionMode === "direct" && jumpHost ? jumpHost : null,
         proxy_type: connectionMode === "direct" && proxyType ? proxyType : null,
         proxy_host: connectionMode === "direct" && proxyType ? proxyHost || null : null,
@@ -337,6 +405,66 @@ export function HostForm({ host, onClose }: Props) {
                   </div>
                 ) : relayEnabled ? (
                   <>
+                    {cloudReady && (
+                      <>
+                        <div className="form-row two-col">
+                          <div>
+                            <label>Kino Cloud machine</label>
+                            <select value={agentId} onChange={(e) => pickMachine(e.target.value)}>
+                              <option value="">- pick a machine -</option>
+                              {machines.map((m) => (
+                                <option key={m.agent_id} value={m.agent_id}>
+                                  {m.name}
+                                  {m.relay_url ? "" : " (agent not installed yet)"}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label>New machine</label>
+                            <div style={{ display: "flex", gap: "8px" }}>
+                              <input
+                                value={newMachineName}
+                                onChange={(e) => setNewMachineName(e.target.value)}
+                                placeholder="homelab-pi"
+                              />
+                              <button
+                                type="button"
+                                className="btn-secondary"
+                                disabled={addingMachine || !newMachineName.trim()}
+                                onClick={handleAddMachine}
+                              >
+                                {addingMachine ? "Adding…" : "Add"}
+                              </button>
+                              <button type="button" className="btn-secondary" onClick={refreshMachines}>
+                                ↻
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                        {installCmd && (
+                          <div className="form-row">
+                            <div style={{ background: "var(--overlay)", padding: "12px", borderRadius: "8px", fontSize: "13px" }}>
+                              <p style={{ margin: "0 0 8px 0", color: "var(--subtext)" }}>
+                                Run this once on the new machine (the link inside is one-time):
+                              </p>
+                              <code style={{ background: "var(--bg)", padding: "6px 8px", display: "block", borderRadius: "4px", color: "var(--text)", userSelect: "all" }}>
+                                {installCmd}
+                              </code>
+                            </div>
+                          </div>
+                        )}
+                        {cloudError && (
+                          <div className="form-row">
+                            <div style={{ color: "var(--red, #f38ba8)", fontSize: "13px" }}>{cloudError}</div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    <details open={!cloudReady} style={{ marginTop: cloudReady ? "8px" : 0 }}>
+                      <summary style={{ cursor: "pointer", fontSize: "13px", color: "var(--subtext)", marginBottom: "8px" }}>
+                        {cloudReady ? "Advanced: self-hosted relay" : "Relay settings"}
+                      </summary>
                     <div className="form-row two-col">
                       <div>
                         <label>Relay URL</label>
@@ -355,14 +483,42 @@ export function HostForm({ host, onClose }: Props) {
                         />
                       </div>
                     </div>
+                    <div className="form-row two-col">
+                      <div>
+                        <label>kino-control URL (optional)</label>
+                        <input
+                          value={controlUrl}
+                          onChange={(e) => setControlUrl(e.target.value)}
+                          placeholder="https://control.example.com"
+                        />
+                      </div>
+                      <div>
+                        <label>Relay token {controlUrl ? "(manager token)" : "(optional)"}</label>
+                        <input
+                          type="password"
+                          value={relayToken}
+                          onChange={(e) => setRelayToken(e.target.value)}
+                          placeholder={controlUrl ? "Manager token from kino-control" : "Only if the relay requires auth"}
+                        />
+                      </div>
+                    </div>
+                    {controlUrl && (
+                      <div className="form-row">
+                        <div style={{ fontSize: "12px", color: "var(--subtext)" }}>
+                          The relay is discovered from kino-control at connect time; the Relay URL
+                          above becomes an optional fallback for when kino-control is unreachable.
+                        </div>
+                      </div>
+                    )}
                     <div className="form-row">
                       <div style={{ background: "var(--overlay)", padding: "12px", borderRadius: "8px", fontSize: "13px" }}>
                         <p style={{ margin: "0 0 8px 0", color: "var(--subtext)" }}>Run this command on the target server to install and start the agent:</p>
                         <code style={{ background: "var(--bg)", padding: "6px 8px", display: "block", borderRadius: "4px", color: "var(--text)" }}>
-                          kino-agent --relay-url {relayUrl} --agent-id {agentId}
+                          kino-agent --relay-url {relayUrl} --agent-id {agentId}{relayToken ? " --token <agent token>" : ""}
                         </code>
                       </div>
                     </div>
+                    </details>
                   </>
                 ) : (
                   // Flag turned off while this host still uses agent mode. Don't surface the

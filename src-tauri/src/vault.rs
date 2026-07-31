@@ -64,6 +64,16 @@ pub struct Host {
     /// Relay URL if connection_mode is "agent"
     #[serde(default)]
     pub relay_url: Option<String>,
+    /// Bearer token for the relay if connection_mode is "agent" and the relay
+    /// requires auth (its static RELAY_TOKEN, or a kino-control manager token).
+    #[serde(default)]
+    pub relay_token: Option<String>,
+    /// kino-control base URL. When set, the manager asks it which relay the
+    /// agent is parked on instead of relying on a fixed relay_url (which then
+    /// serves as a fallback/cache). Requires relay_token to be a kino-control
+    /// manager token scoped to this agent.
+    #[serde(default)]
+    pub control_url: Option<String>,
     /// Optional proxy to dial the SSH host through: "socks5" or "http" (CONNECT).
     /// None / empty means connect directly.
     #[serde(default)]
@@ -237,6 +247,8 @@ mod tests {
             connection_mode: None,
             agent_id: None,
             relay_url: None,
+            relay_token: None,
+            control_url: None,
             proxy_type: None,
             proxy_host: None,
             proxy_port: None,

@@ -53,4 +53,8 @@ Do **not** file public issues for vulnerabilities - see [SECURITY.md](SECURITY.m
 
 ## License
 
-By contributing, you agree that your contributions are licensed under the [MIT License](LICENSE).
+By contributing, you agree that your contributions are licensed under the
+[GNU GPL-3.0](LICENSE), and you grant the project maintainer a perpetual,
+worldwide, non-exclusive, royalty-free right to relicense your contribution,
+including under commercial terms. (This keeps dual licensing possible without
+chasing every past contributor.)

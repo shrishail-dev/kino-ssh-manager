@@ -1,4 +1,5 @@
 mod ai;
+mod cloud;
 mod docker;
 mod forwarding;
 mod health;
@@ -56,6 +57,7 @@ fn unlock_vault(state: State<'_, AppState>, password: String) -> Result<Vec<Host
         *state.hosts.lock().unwrap() = hosts.clone();
         *state.history.lock().unwrap() = history;
         *state.snippets.lock().unwrap() = snippets;
+        cloud::activate(&key);
         Ok(hosts)
     } else {
         use aes_gcm::aead::OsRng;
@@ -80,6 +82,7 @@ fn unlock_vault(state: State<'_, AppState>, password: String) -> Result<Vec<Host
 
 #[tauri::command]
 fn lock_vault(state: State<'_, AppState>) {
+    cloud::deactivate();
     // Wipe the derived key from memory rather than just dropping it.
     if let Some(mut key) = state.vault_key.lock().unwrap().take() {
         use zeroize::Zeroize;
@@ -1433,6 +1436,11 @@ pub fn run() {
             get_snippets,
             save_snippet,
             delete_snippet,
+            cloud::cloud_get_config,
+            cloud::cloud_set_config,
+            cloud::cloud_list_machines,
+            cloud::cloud_add_machine,
+            cloud::cloud_remove_machine,
             sync_get_config,
             sync_set_config,
             sync_test,
@@ -1508,6 +1516,8 @@ mod export_tests {
             connection_mode: None,
             agent_id: None,
             relay_url: None,
+            relay_token: None,
+            control_url: None,
             proxy_type: None,
             proxy_host: None,
             proxy_port: None,
