@@ -4,6 +4,50 @@ All notable changes to Kino SSH Manager are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.7.0] - 2026-07-31
+
+### Added
+- **Kino Cloud** - managed relays, so agent mode no longer needs you to run your
+  own infrastructure. Paste an account key once under **Settings - Agent &
+  Cloud**; the host editor's agent mode then becomes a machine picker. Add a
+  machine, run the one-line install command it prints on the target, and
+  connect. The vault stores only the agent id - the relay address and a
+  short-lived connection token are fetched from kino-control at connect time, so
+  nothing goes stale and tokens rotate on their own. The account key is
+  encrypted under the vault key like every other secret, and the decrypted copy
+  is dropped when the vault locks.
+- **Relay discovery for self-hosted setups** - a host can point at a
+  **kino-control URL** instead of a fixed relay, and the manager asks it where
+  the agent is currently parked. The saved Relay URL becomes a fallback, so a
+  control-plane outage degrades to "reuse where it was" instead of locking you
+  out. The manual relay fields now live under **Advanced: self-hosted relay**
+  once Kino Cloud is configured.
+- **Relay tokens** - agent-mode hosts can carry a bearer token for relays that
+  require auth (a relay's static token, or a kino-control manager token). It is
+  sent as an `Authorization` header rather than a query parameter, so it stays
+  out of relay and proxy access logs.
+
+### Changed
+- **New look: "Kino Projection"** - the app now shares one film-poster design
+  language with the Kino Cloud web UI. A new default theme of the same name (two
+  inks on bitumen black), a wordmark masthead with a printed colour bar and a
+  35mm perforation rail, and a rebuilt unlock screen. Big Shoulders, Chivo, and
+  JetBrains Mono ship with the app and are loaded locally - no webfont requests
+  at runtime. Existing theme choices are untouched; Kino Projection only applies
+  to installs that never picked a theme.
+- **Settings is now sectioned** - General, Agent & Cloud, Copilot, Vault, and
+  Tools, instead of one long scroll.
+
+### Compatibility
+- The new `relay_token` and `control_url` host fields are additive; existing
+  vaults load unchanged and hosts with a plain relay URL keep connecting exactly
+  as before.
+
+### License
+- **Relicensed from MIT to GNU GPL-3.0.** Contributions are accepted under
+  GPL-3.0 with a relicensing grant to the maintainer, which keeps dual licensing
+  possible - see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## [0.6.1] - 2026-07-23
 
 ### Added
@@ -22,7 +66,7 @@ on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
   manager or the release page.
 - **Host health indicators** - an opt-in background probe TCP-connects to each
   host's SSH port and shows a green/red dot plus round-trip latency in the
-  sidebar. Configurable under **Settings → Host health checks** (Off by default;
+  sidebar. Configurable under **Settings - Host health checks** (Off by default;
   30s / 1 min / 5 min). Hosts reached through a relay or a jump host report
   "unknown" rather than a misleading "down", since probing them would mean
   standing up a full session each cycle.
