@@ -177,7 +177,7 @@ export function SettingsMenu({ onLock }: Props) {
     cloudGetConfig()
       .then((c) => {
         // Default to the hosted controller; self-hosters overwrite it.
-        setCloudUrl(c?.control_url || "https://kino.dpdns.org");
+        setCloudUrl(c?.control_url || "https://kino.samarthkombemane.com");
         setCloudKeySet(c?.key_set ?? false);
       })
       .catch(() => {});
@@ -352,7 +352,7 @@ export function SettingsMenu({ onLock }: Props) {
                           <input
                             type="text"
                             className="settings-input"
-                            placeholder="https://kino.dpdns.org"
+                            placeholder="https://kino.samarthkombemane.com"
                             value={cloudUrl}
                             onChange={(e) => setCloudUrl(e.target.value)}
                           />
