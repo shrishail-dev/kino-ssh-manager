@@ -105,8 +105,8 @@ export function SnippetsModal({ onClose }: Props) {
                         alignItems: "flex-start",
                         gap: 12,
                         padding: "12px 14px",
-                        background: "var(--color-surface)",
-                        border: "1px solid var(--color-border)",
+                        background: "var(--surface)",
+                        border: "1px solid var(--muted)",
                         borderRadius: 8,
                       }}
                     >
@@ -117,7 +117,7 @@ export function SnippetsModal({ onClose }: Props) {
                           style={{
                             margin: 0,
                             fontSize: 12,
-                            color: "var(--color-text-dim)",
+                            color: "var(--subtle)",
                             whiteSpace: "pre-wrap",
                             wordBreak: "break-word",
                           }}

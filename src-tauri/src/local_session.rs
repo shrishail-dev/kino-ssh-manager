@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::sync::{Arc, Mutex};
 use std::thread;
+use std::time::Instant;
 use tauri::{AppHandle, Emitter};
 
 pub enum TermCommand {
@@ -72,29 +73,76 @@ pub fn connect_command(
     let recorder: Arc<Mutex<Option<crate::recorder::Recorder>>> = Arc::new(Mutex::new(None));
     let recorder_read = recorder.clone();
 
-    // Reader thread
+    // Reader thread. The PTY read is blocking, so batching can't be folded into
+    // it the way the async SSH loop does - the last chunk of a burst would sit
+    // in the buffer until the *next* read returned, which for an idle shell
+    // means "until the user types something", i.e. a prompt that never appears.
+    // So the reader only reads, and a second thread applies the same coalescing
+    // policy driven by `recv_timeout`.
+    let (out_tx, out_rx) = std::sync::mpsc::channel::<Vec<u8>>();
     thread::spawn(move || {
         let mut buf = [0u8; 8192];
         loop {
             match reader.read(&mut buf) {
                 Ok(0) => break,
                 Ok(n) => {
+                    // Record per read, so timing in an asciicast stays true.
                     if let Ok(mut lock) = recorder_read.lock() {
                         if let Some(ref mut rec) = *lock {
                             let _ = rec.record_output(&buf[..n]);
                         }
                     }
-                    app_handle_read
-                        .emit(&format!("local-data-{}", sid_read), buf[..n].to_vec())
-                        .ok();
+                    if out_tx.send(buf[..n].to_vec()).is_err() {
+                        break;
+                    }
                 }
                 Err(_) => break,
             }
         }
+        // Dropping out_tx ends the emitter thread below.
+    });
+
+    // Emitter thread: batches output, then announces the close.
+    thread::spawn(move || {
+        use std::sync::mpsc::RecvTimeoutError;
+        let data_event = format!("local-data-{}", sid_read);
+        let closed_event = format!("local-closed-{}", sid_read);
+        let mut batcher = crate::coalesce::Coalescer::new(
+            crate::coalesce::WINDOW,
+            crate::coalesce::MAX_BATCH,
+        );
+
+        loop {
+            // While a burst is in flight, wake at the deadline; when idle, just
+            // block until there is something to send.
+            let received = match batcher.deadline() {
+                Some(d) => out_rx.recv_timeout(d.saturating_duration_since(Instant::now())),
+                None => out_rx.recv().map_err(|_| RecvTimeoutError::Disconnected),
+            };
+            match received {
+                Ok(chunk) => {
+                    if let Some(out) = batcher.push(&chunk, Instant::now()) {
+                        app_handle_read.emit(&data_event, out).ok();
+                    }
+                }
+                Err(RecvTimeoutError::Timeout) => {
+                    if let Some(out) = batcher.on_deadline(Instant::now()) {
+                        app_handle_read.emit(&data_event, out).ok();
+                    }
+                }
+                Err(RecvTimeoutError::Disconnected) => {
+                    // Flush before announcing the close, or the tail of the
+                    // last command is lost.
+                    if let Some(tail) = batcher.take() {
+                        app_handle_read.emit(&data_event, tail).ok();
+                    }
+                    break;
+                }
+            }
+        }
+
         sessions_read.lock().unwrap().remove(&sid_read);
-        app_handle_read
-            .emit(&format!("local-closed-{}", sid_read), ())
-            .ok();
+        app_handle_read.emit(&closed_event, ()).ok();
     });
 
     let app_handle_write = app_handle.clone();

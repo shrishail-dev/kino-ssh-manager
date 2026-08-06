@@ -17,6 +17,7 @@ type InstallPhase = "idle" | "working" | "downloading" | "installed" | "failed";
 export function AboutModal({ onClose }: Props) {
   const { updateInfo, checkForUpdate } = useVaultStore();
   const [version, setVersion] = useState("");
+  const [renderer, setRenderer] = useState("");
   const [checking, setChecking] = useState(false);
 
   const [phase, setPhase] = useState<InstallPhase>("idle");
@@ -25,6 +26,8 @@ export function AboutModal({ onClose }: Props) {
 
   useEffect(() => {
     getVersion().then(setVersion).catch(() => setVersion(""));
+    // Written by Terminal on mount; empty until a terminal has been opened.
+    setRenderer(localStorage.getItem("ssh-mgr:renderer") ?? "");
   }, []);
 
   async function recheck() {
@@ -157,6 +160,21 @@ export function AboutModal({ onClose }: Props) {
             <span>GPL-3.0 Licensed</span>
             <span className="about-dot">·</span>
             <span>Tauri · React · russh</span>
+            {renderer && (
+              <>
+                <span className="about-dot">·</span>
+                {/* On Linux, WebKitGTK often has no usable GL context and falls
+                    back to the much slower DOM renderer. Worth being able to
+                    check without an inspector when a terminal feels sluggish. */}
+                <span title={
+                  renderer === "webgl"
+                    ? "Terminal rendering is GPU accelerated"
+                    : "No WebGL context - terminal redraws are slower under heavy output"
+                }>
+                  Renderer: {renderer}
+                </span>
+              </>
+            )}
           </div>
           <span className="about-meta">Samarth Kombemane</span>
           <button

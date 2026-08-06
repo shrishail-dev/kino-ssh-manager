@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Host, useVaultStore } from "../store";
+import { ForwardDiagram, forwardSummary } from "./ForwardDiagram";
 
 interface Props {
   sessionId: string;
@@ -77,13 +78,10 @@ export function ForwardingPanel({ sessionId, host }: Props) {
                     {fwd.label || "Tunnel"}
                     <span className="fwd-kind-tag">{fwd.kind ?? "local"}</span>
                   </span>
-                  <span className="fwd-meta">
-                    {(fwd.kind ?? "local") === "socks"
-                      ? `SOCKS5 · localhost:${fwd.local_port}`
-                      : (fwd.kind ?? "local") === "remote"
-                        ? `${fwd.bind_host || "127.0.0.1"}:${fwd.remote_port} - ${fwd.remote_host}:${fwd.local_port}`
-                        : `localhost:${fwd.local_port} - ${fwd.remote_host}:${fwd.remote_port}`}
-                  </span>
+                  {/* The diagram replaces the old "a - b" line, which never said
+                      which end opens the port. Kept as text for screen readers. */}
+                  <span className="sr-only">{forwardSummary(fwd, host)}</span>
+                  <ForwardDiagram forward={fwd} host={host} active={isActive} />
                 </div>
                 <button
                   className={`fwd-toggle ${isActive ? "stop" : "start"}`}

@@ -560,7 +560,7 @@
   <section class="hero">
     <div class="wrap">
       <div class="hero-inner reel">
-        <span class="pill"><span class="tag">v0.7</span> New: Kino Cloud - managed relays, no infrastructure to run</span>
+        <span class="pill"><span class="tag">v0.7.1</span> New: faster terminal, output highlighting &amp; drawn port forwards</span>
         <h1>Every SSH host<br><span class="soft">without the cloud</span><span class="stop">.</span></h1>
         <p class="lead">
           A cross-platform credential manager and terminal. Your hosts, keys, and passwords
@@ -637,7 +637,7 @@
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M13 15h4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <h3>SSH terminal</h3><p>A full xterm.js terminal per host, with scrollback search and adjustable font size.</p>
+          <h3>SSH terminal <span class="new">New</span></h3><p>A full xterm.js terminal per host, with split panes, broadcast input, adjustable font size, and scrollback configurable up to 200,000 lines.</p>
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="4"/><path d="M11 11l8 8M16 16l2-2M19 19l2-2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
@@ -645,7 +645,7 @@
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h11l-3-3M4 7l3 3M20 17H9l3 3M20 17l-3-3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <h3>Port forwarding</h3><p>Local (<span class="mono">-L</span>), remote (<span class="mono">-R</span>) and dynamic SOCKS5 (<span class="mono">-D</span>) tunnels, started and stopped independently per session.</p>
+          <h3>Port forwarding <span class="new">New</span></h3><p>Local (<span class="mono">-L</span>), remote (<span class="mono">-R</span>) and dynamic SOCKS5 (<span class="mono">-D</span>) tunnels, started and stopped per session - each drawn as a diagram showing which end opens the port and which way traffic flows.</p>
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" stroke-linejoin="round"/></svg></div>
@@ -658,6 +658,18 @@
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 18a4 4 0 010-8 5 5 0 019.6-1.5A4.5 4.5 0 0117 18H7z" stroke-linejoin="round"/></svg></div>
           <h3>Optional cloud sync</h3><p>Sync the <em>encrypted</em> vault to a private GitHub repo, with sha-based conflict detection.</p>
+        </div>
+        <div class="feat">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h6M4 12h10M4 17h7" stroke-linecap="round"/><path d="M16 7h4M18 12h2M15 17h5" stroke-linecap="round"/></svg></div>
+          <h3>Output highlighting <span class="new">New</span></h3><p>Timestamps, severities, IP addresses, URLs and file paths are coloured from the active theme, in the spirit of MobaXterm. Never inside vim, htop or less, and never over output the host already coloured.</p>
+        </div>
+        <div class="feat">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35" stroke-linecap="round"/><path d="M8.5 11h5" stroke-linecap="round"/></svg></div>
+          <h3>Find in terminal <span class="new">New</span></h3><p>Search reports how many matches there are and which one you're on, highlights every hit, and marks them on the scrollbar. Case-sensitive, whole-word and regular-expression toggles.</p>
+        </div>
+        <div class="feat">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V5h16v2" stroke-linecap="round"/><path d="M9 20h6" stroke-linecap="round"/><path d="M12 5v15" stroke-linecap="round"/></svg></div>
+          <h3>Typography &amp; motion <span class="new">New</span></h3><p>Six bundled monospace faces for the terminal, an optional background override, and a choice of interface font including Atkinson Hyperlegible. A reduced-motion switch stops all animation and drops the decorative paint.</p>
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 4.5-3.2 7.5-8 9-4.8-1.5-8-4.5-8-9V6l8-3z" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
@@ -721,11 +733,11 @@
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 18a4 4 0 010-8 5 5 0 019.6-1.5A4.5 4.5 0 0117 18H7z" stroke-linejoin="round"/><path d="M12 12v4.5M10 14.5l2-2 2 2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <h3>Kino Cloud <span class="new">New</span></h3><p>Agent mode with no infrastructure to run. Paste an account key once, add a machine, run the one-line installer it prints - then connect. Relays, tokens and rotation are handled for you, and the vault stores only the machine's id.</p>
+          <h3>Kino Cloud</h3><p>Agent mode with no infrastructure to run. Paste an account key once, add a machine, run the one-line installer it prints - then connect. Relays, tokens and rotation are handled for you, and the vault stores only the machine's id.</p>
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8.5" stroke-dasharray="3 3"/><path d="M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2" stroke-linecap="round"/></svg></div>
-          <h3>Relay discovery <span class="new">New</span></h3><p>Self-hosting? Point a host at kino-control instead of a fixed relay and the app asks where the agent is parked at connect time. Your saved relay URL stays as a fallback, so a control-plane outage degrades instead of locking you out.</p>
+          <h3>Relay discovery</h3><p>Self-hosting? Point a host at kino-control instead of a fixed relay and the app asks where the agent is parked at connect time. Your saved relay URL stays as a fallback, so a control-plane outage degrades instead of locking you out.</p>
         </div>
       </div>
     </div>

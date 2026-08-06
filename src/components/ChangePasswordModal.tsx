@@ -45,7 +45,7 @@ export function ChangePasswordModal({ onClose }: Props) {
 
         <div className="host-form">
           {done ? (
-            <p className="hint" style={{ color: "var(--color-green)" }}>
+            <p className="hint" style={{ color: "var(--green)" }}>
               Master password changed. Your vault, history, and snippets were re-encrypted under the
               new password.
             </p>

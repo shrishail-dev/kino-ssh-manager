@@ -187,7 +187,7 @@ export function SyncModal({ onClose }: Props) {
 
           {status.kind === "error" && <p className="form-error">{status.msg}</p>}
           {status.kind === "ok" && (
-            <p className="hint" style={{ color: "var(--color-green)" }}>{status.msg}</p>
+            <p className="hint" style={{ color: "var(--green)" }}>{status.msg}</p>
           )}
           {status.kind === "busy" && <p className="hint">{status.msg}</p>}
           {status.kind === "conflict" && (

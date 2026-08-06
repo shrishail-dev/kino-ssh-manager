@@ -5,10 +5,12 @@ A secure, cross-platform SSH credential manager and terminal, built with [Tauri 
 ## Features
 
 - **Encrypted vault** - Argon2 key derivation + AES-256-GCM. One master password unlocks everything.
-- **SSH terminal** - full xterm.js terminal per host, with split panes, broadcast input, scrollback search (Ctrl+F), copy/paste (Ctrl+Shift+C/V), and adjustable font size.
+- **SSH terminal** - full xterm.js terminal per host, with split panes, broadcast input, copy/paste (Ctrl+Shift+C/V), adjustable font size, and configurable scrollback up to 200,000 lines (clear it any time with Ctrl+Shift+K).
+- **Find in terminal** - Ctrl+F reports how many matches there are and which one you're on, highlights every hit, and marks them on the scrollbar so you can see where they sit in a long scrollback. Case-sensitive, whole-word and regex toggles.
+- **Output highlighting** - timestamps, severity words, IP addresses, URLs and file paths are coloured from the active theme's palette, in the spirit of MobaXterm's. Never applied inside full-screen programs like vim, htop or less, and never over output the host has already coloured.
 - **Flexible auth** - store a password and/or an SSH key per host (including encrypted keys with a passphrase); import `.pem`/`.key`/`.ppk` files or generate ed25519 keypairs. Uses the SSH agent (OpenSSH agent / Pageant) when asked.
 - **Jump host / bastion** - route a connection through another saved host, like `ssh -J`. Each hop's host key is verified independently, and bastions can chain.
-- **Port forwarding** - local (`-L`), remote (`-R`), and dynamic SOCKS5 (`-D`) tunnels, started and stopped independently per session; optional dial-through SOCKS5/HTTP proxy per host.
+- **Port forwarding** - local (`-L`), remote (`-R`), and dynamic SOCKS5 (`-D`) tunnels, started and stopped independently per session; optional dial-through SOCKS5/HTTP proxy per host. Each tunnel is drawn as a three-station diagram showing which machine opens the port, where the destination is resolved, and which way traffic flows - so `-L` and `-R` can't be confused.
 - **SFTP file browser & editor** - browse, upload/download with progress, rename, delete, new folder, chmod, and edit remote files in a built-in Monaco editor that saves straight back over SFTP.
 - **AI copilot (optional)** - a bring-your-own-key assistant in the terminal, powered by [OpenRouter](https://openrouter.ai). Ask about a host, explain an error, or select output and send it to the copilot. The key is encrypted in the vault; off by default.
 - **Docker, metrics & processes** - manage containers/images/volumes/networks with live logs and one-click shells, watch a streaming CPU/mem/disk/network dashboard, and list/kill processes - all over the SSH connection.
@@ -20,7 +22,8 @@ A secure, cross-platform SSH credential manager and terminal, built with [Tauri 
 - **Cloud sync (optional)** - sync the *encrypted* vault to a private GitHub repo (Contents API, sha-based conflict detection). Optional auto-sync (pull on unlock, push on change).
 - **In-app updates** - install a new signed release from within About, with a fallback to the release page (AppImage on Linux; `.deb`/`.rpm` update via the system package manager).
 - **Security niceties** - idle auto-lock, change-master-password (re-key), TOFU host-key verification, secrets zeroized in memory on lock.
-- **Quality of life** - host health & latency, home favorites, session restore on unlock, customizable keyboard shortcuts, host groups, per-host accent colors, pinned/renamable panes, 14 themes, connection history, and `~/.ssh/config` import/export.
+- **Appearance** - 15 themes, six bundled monospace faces for the terminal plus an optional background override, and a choice of interface font including [Atkinson Hyperlegible](https://www.brailleinstitute.org/freefont/). Every face ships with the app, so nothing is fetched at runtime. A **reduced motion & effects** switch stops all animation and drops the decorative paint layers if you want the interface cheaper to draw.
+- **Quality of life** - host health & latency, home favorites, session restore on unlock, customizable keyboard shortcuts, host groups, per-host accent colors, pinned/renamable panes, searchable connection history, and `~/.ssh/config` import/export.
 
 ## Agent connection mode
 

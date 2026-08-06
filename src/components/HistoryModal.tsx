@@ -12,6 +12,7 @@ export function HistoryModal({ onClose }: Props) {
   const [history, setHistory] = useState<HistoryEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     getHistory()
@@ -25,8 +26,21 @@ export function HistoryModal({ onClose }: Props) {
       });
   }, [getHistory]);
 
-  const totalPages = Math.ceil(history.length / ITEMS_PER_PAGE);
-  const currentHistory = history.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  // History only ever grows, so it needs a way in. Matches the message and the
+  // event type, so "vault" or "deleted" both narrow usefully.
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? history.filter(
+        (e) =>
+          e.message.toLowerCase().includes(q) ||
+          e.event_type.toLowerCase().replace(/_/g, " ").includes(q)
+      )
+    : history;
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  // Filtering can leave the current page past the end of the new result set.
+  const page = Math.min(currentPage, Math.max(1, totalPages));
+  const currentHistory = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   return (
     <div className="modal-overlay">
@@ -36,36 +50,49 @@ export function HistoryModal({ onClose }: Props) {
           <button className="icon-btn" onClick={onClose}>✕</button>
         </div>
         
+        <div style={{ padding: "12px 20px 0" }}>
+          <input
+            autoFocus
+            value={query}
+            placeholder="Filter history…"
+            onChange={(e) => { setQuery(e.target.value); setCurrentPage(1); }}
+          />
+        </div>
+
         <div style={{ flex: 1, overflowY: "auto", padding: "0 20px", marginTop: 10 }}>
           {loading ? (
-            <p style={{ textAlign: "center", color: "var(--color-text-dim)" }}>Loading history...</p>
+            <p style={{ textAlign: "center", color: "var(--subtle)" }}>Loading history...</p>
           ) : history.length === 0 ? (
-            <p style={{ textAlign: "center", color: "var(--color-text-dim)" }}>No history available yet.</p>
+            <p style={{ textAlign: "center", color: "var(--subtle)" }}>No history available yet.</p>
+          ) : filtered.length === 0 ? (
+            <p style={{ textAlign: "center", color: "var(--subtle)" }}>
+              Nothing matches “{query}”.
+            </p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingBottom: 20 }}>
               {currentHistory.map((event) => (
-                <div key={event.id} style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", background: "var(--color-surface)", borderRadius: 8, border: "1px solid var(--color-border)" }}>
+                <div key={event.id} style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", background: "var(--surface)", borderRadius: 8, border: "1px solid var(--muted)" }}>
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                       {event.event_type === "connection" && (
-                        <span style={{ color: "var(--color-blue)", fontSize: 12, fontWeight: 600, padding: "2px 6px", background: "rgba(137, 180, 250, 0.1)", borderRadius: 4 }}>Connection</span>
+                        <span className="history-tag" style={{ color: `var(--blue)`, borderColor: `color-mix(in srgb, var(--blue) 40%, transparent)` }}>Connection</span>
                       )}
                       {(event.event_type === "host_added" || event.event_type === "host_edited" || event.event_type === "host_deleted") && (
-                        <span style={{ color: "var(--color-green)", fontSize: 12, fontWeight: 600, padding: "2px 6px", background: "rgba(166, 227, 161, 0.1)", borderRadius: 4 }}>Vault Update</span>
+                        <span className="history-tag" style={{ color: `var(--green)`, borderColor: `color-mix(in srgb, var(--green) 40%, transparent)` }}>Vault Update</span>
                       )}
                       {event.event_type.startsWith("vault_") && (
-                        <span style={{ color: "var(--color-text)", fontSize: 12, fontWeight: 600, padding: "2px 6px", background: "rgba(205, 214, 244, 0.1)", borderRadius: 4 }}>System</span>
+                        <span className="history-tag" style={{ color: `var(--text)`, borderColor: `color-mix(in srgb, var(--text) 40%, transparent)` }}>System</span>
                       )}
                       {event.event_type.startsWith("key_") && (
-                        <span style={{ color: "var(--color-yellow)", fontSize: 12, fontWeight: 600, padding: "2px 6px", background: "rgba(249, 226, 175, 0.1)", borderRadius: 4 }}>Key Action</span>
+                        <span className="history-tag" style={{ color: `var(--yellow)`, borderColor: `color-mix(in srgb, var(--yellow) 40%, transparent)` }}>Key Action</span>
                       )}
                       {(event.event_type === "host_imported" || event.event_type === "host_exported") && (
-                        <span style={{ color: "var(--color-mauve)", fontSize: 12, fontWeight: 600, padding: "2px 6px", background: "rgba(203, 166, 247, 0.1)", borderRadius: 4 }}>File I/O</span>
+                        <span className="history-tag" style={{ color: `var(--mauve)`, borderColor: `color-mix(in srgb, var(--mauve) 40%, transparent)` }}>File I/O</span>
                       )}
                     </div>
-                    <p style={{ fontSize: 14, color: "var(--color-text)", margin: 0 }}>{event.message}</p>
+                    <p style={{ fontSize: 14, color: "var(--text)", margin: 0 }}>{event.message}</p>
                   </div>
-                  <div style={{ textAlign: "right", color: "var(--color-text-dim)", fontSize: 12 }}>
+                  <div style={{ textAlign: "right", color: "var(--subtle)", fontSize: 12 }}>
                     <div>{new Date(event.timestamp).toLocaleDateString()}</div>
                     <div>{new Date(event.timestamp).toLocaleTimeString()}</div>
                   </div>
@@ -80,17 +107,17 @@ export function HistoryModal({ onClose }: Props) {
             <button 
               className="btn" 
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1 || totalPages === 0}
+              disabled={page === 1 || totalPages === 0}
             >
               Previous
             </button>
-            <span style={{ fontSize: 14, color: "var(--color-text-dim)" }}>
-              Page {totalPages === 0 ? 0 : currentPage} of {totalPages}
+            <span style={{ fontSize: 14, color: "var(--subtle)" }}>
+              Page {totalPages === 0 ? 0 : page} of {totalPages}
             </span>
             <button 
               className="btn" 
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages || totalPages === 0}
+              disabled={page === totalPages || totalPages === 0}
             >
               Next
             </button>

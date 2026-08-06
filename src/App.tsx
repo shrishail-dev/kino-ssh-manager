@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useVaultStore } from "./store";
+import { applyAppFont, applyLiteMode, useVaultStore } from "./store";
 import { comboFromEvent } from "./keymap";
 import { THEMES, applyTheme } from "./themes";
 import { Sidebar } from "./components/Sidebar";
@@ -53,6 +53,8 @@ function App() {
     restoreLastSession,
     healthIntervalSec,
     checkHostsHealth,
+    appFont,
+    liteMode,
   } = useVaultStore();
   const [sftpTabId, setSftpTabId] = useState<string | null>(null);
   const [dockerTabId, setDockerTabId] = useState<string | null>(null);
@@ -111,6 +113,16 @@ function App() {
     const t = THEMES.find((t) => t.id === theme) ?? THEMES[0];
     applyTheme(t);
   }, [theme]);
+
+  // The interface font is a CSS variable, so it has to be pushed at the document
+  // on boot - the stylesheet only carries the default.
+  useEffect(() => {
+    applyAppFont(appFont);
+  }, [appFont]);
+
+  useEffect(() => {
+    applyLiteMode(liteMode);
+  }, [liteMode]);
 
   // Check for a newer release on launch (silent if offline). Runs before unlock
   // too - the check hits GitHub, not the vault - so the login screen can show it.

@@ -76,6 +76,191 @@
     U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
+/* ── Interface fonts offered under Settings - Appearance ──────────────────── */
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/ibmplexsans-400-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/ibmplexsans-400-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/ibmplexsans-600-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/ibmplexsans-600-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Atkinson Hyperlegible";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/atkinson-400-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Atkinson Hyperlegible";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/atkinson-400-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Atkinson Hyperlegible";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/atkinson-700-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Atkinson Hyperlegible";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/atkinson-700-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ── Terminal fonts ──────────────────────────────────────────────────────────
+ * Bundled monospace faces offered under Settings - Terminal. All open source
+ * (SIL OFL, except Ubuntu Mono under the UFL); see public/fonts/README.md.
+ * Shipped with the app for the same reason as the UI faces: a credential
+ * manager should render identically offline and never call out to a CDN.
+ */
+@font-face {
+  font-family: "Fira Code";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/firacode-var-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Fira Code";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/firacode-var-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/ibmplexmono-400-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/ibmplexmono-400-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/ibmplexmono-700-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/ibmplexmono-700-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Source Code Pro";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/sourcecodepro-var-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Source Code Pro";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/sourcecodepro-var-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Inconsolata";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/inconsolata-var-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Inconsolata";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/inconsolata-var-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Ubuntu Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/ubuntumono-400-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Ubuntu Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/ubuntumono-400-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Ubuntu Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/ubuntumono-700-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Ubuntu Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/ubuntumono-700-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
   /* Ink set - overwritten at runtime by applyTheme(). These defaults are the
      "Kino Projection" house theme, identical to the kino-control web UI. */
@@ -109,6 +294,23 @@
   --rule: var(--muted);
   /* App.tsx draws the split-pane divider with this. */
   --border: var(--muted);
+
+  /* ── Layers ──────────────────────────────────────────────────────────────
+   * One scale, so nothing has to guess. The grain is the reason this exists:
+   * it sits above the chrome, and the terminal has to sit above *it* to keep
+   * the picture clean - which pushed the terminal above every overlay in the
+   * app until they were lifted over it too.
+   *
+   *   chrome   10-40   masthead, colour bar, perforation rail
+   *   grain    480     film grain over the chassis
+   *   picture  481     the terminal, clean above the grain
+   *   popover  600     dropdowns, menus, toast, palette, settings page
+   *   modal    700     dialogs, which cover everything
+   */
+  --z-grain: 480;
+  --z-picture: 481;
+  --z-popover: 600;
+  --z-modal: 700;
 }
 
 html,
@@ -436,8 +638,30 @@ body,
   transition: opacity 0.12s;
 }
 
-.host-item:hover .host-actions {
+/* Row actions reveal on hover, but hover alone is not enough to *keep* them.
+ *
+ * The export dropdown hangs below the row, so moving the pointer into it leaves
+ * the row and used to fade the whole action strip - including the open menu -
+ * back to opacity 0. Because opacity 0 still takes pointer events, the menu was
+ * invisible yet clickable. The delete button's "click again to confirm" state
+ * vanished the same way while the state itself persisted.
+ *
+ * So: keep them while the pointer is over the row, while focus is anywhere
+ * inside it (the clicked button keeps focus), and while an export menu is open.
+ */
+.host-item:hover .host-actions,
+.host-item:focus-within .host-actions,
+.host-item:has(.export-wrap.open) .host-actions {
   opacity: 1;
+}
+
+/* The row should still look active while its menu is open, or the menu reads as
+   belonging to nothing. */
+.host-item:has(.export-wrap.open) {
+  background: color-mix(in srgb, var(--ink-paper) 4%, transparent);
+}
+.host-item:has(.export-wrap.open)::before {
+  transform: scaleY(1);
 }
 
 .icon-btn {
@@ -583,7 +807,8 @@ body,
   opacity: 0;
   transition: opacity 0.12s, color 0.12s;
 }
-.host-item:hover .host-fav { opacity: 1; }
+.host-item:hover .host-fav,
+.host-item:focus-within .host-fav { opacity: 1; }
 .host-fav:hover { color: var(--yellow); }
 /* Pinned hosts keep their star lit even when the row isn't hovered. */
 .host-fav.active { opacity: 1; color: var(--yellow); }
@@ -2140,7 +2365,7 @@ textarea.mono {
   background: var(--surface);
   border: 1px solid var(--muted);
   border-radius: var(--radius);
-  min-width: 300px;
+  min-width: 420px;
   z-index: 300;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
   padding: 4px;
@@ -3221,21 +3446,26 @@ dialog {
  * over the chassis but never over the picture: .terminal-wrap and the modal
  * layer both sit above it (481 / 500), everything else below. */
 .app-root::after,
-.unlock-screen::after {
+.unlock-screen::after,
+/* The settings page is full-screen chassis, so it carries grain too. It used to
+   inherit it by sitting *under* the app-wide layer; now that it has been lifted
+   over the terminal it needs its own. */
+.settings-page::after {
   content: "";
   position: fixed;
   inset: 0;
-  z-index: 480;
+  z-index: var(--z-grain);
   pointer-events: none;
   opacity: 0.34;
   mix-blend-mode: soft-light;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23g)' opacity='0.55'/%3E%3C/svg%3E");
 }
 
-/* The picture is clean. Grain stops at the terminal's edge. */
+/* The picture is clean: grain stops at the terminal's edge. Everything that has
+   to appear *over* the terminal sits at --z-popover or above; see the scale. */
 .terminal-wrap {
   position: relative;
-  z-index: 481;
+  z-index: var(--z-picture);
 }
 
 /* Chrome is printed *on* the atmosphere, so it has to let some through. */
@@ -3453,6 +3683,16 @@ dialog {
   border-top: 2px solid color-mix(in srgb, var(--ink-paper) 22%, transparent);
 }
 
+/* Portalled to <body> and positioned in viewport coordinates by ExportMenu, so
+   the sidebar's scroll container can't clip it. `right`/`top` from the base
+   rule would fight the inline coordinates, hence the resets. */
+.export-dropdown--floating {
+  position: fixed;
+  right: auto;
+  bottom: auto;
+  z-index: var(--z-popover);
+}
+
 /* Popovers are struck, not floated: a hard offset shadow, never a blur halo. */
 .export-dropdown,
 .settings-dropdown,
@@ -3466,6 +3706,15 @@ dialog {
 /* ── Buttons ─────────────────────────────────────────────────────────────────
  * Letterpress: the slab sits on a hard offset shadow and presses into it.
  */
+
+/* A row of buttons must align on its top edge, not stretch: .btn-primary
+   reserves 4px below itself for its shadow, and a stretched sibling would end
+   up visibly taller than it. */
+.modal-footer,
+.copilot-actions,
+.cta-row {
+  align-items: flex-start;
+}
 
 .btn {
   font-family: var(--font-mono);
@@ -3500,6 +3749,14 @@ dialog {
   color: var(--bg);
   font-weight: 700;
   box-shadow: 4px 4px 0 0 var(--ink-accent);
+  /* The letterpress shadow is painted outside the border box and, like every
+     box-shadow, takes part in no layout at all - so a container's padding does
+     nothing to hold room for it. Flush against the right edge of a scrolling
+     panel it collided with the scrollbar. The margin reserves the 4x4 the
+     shadow actually occupies, which is what makes the button's visual footprint
+     and its layout footprint agree. */
+  margin-right: 4px;
+  margin-bottom: 4px;
 }
 
 .btn.btn-primary:hover:not(:disabled) {
@@ -4080,6 +4337,10 @@ textarea.mono,
   padding: 12px;
   font-size: 11px;
   letter-spacing: 0.18em;
+  /* Not width:100% - that plus the shadow-reserving right margin would overflow
+     the form by 4px. The form is a column flex, so stretching fills it exactly. */
+  width: auto;
+  align-self: stretch;
 }
 
 .unlock-hint,
@@ -4514,6 +4775,41 @@ textarea.mono,
   font-family: var(--font-mono);
   font-size: 10.5px;
   letter-spacing: 0.06em;
+}
+
+/* ── Terminal appearance controls ────────────────────────────────────────────*/
+
+.term-bg-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* A colour input is a chrome-drawn widget; strip its padding so only the swatch
+   shows and it reads as a square of ink like everything else. */
+.term-bg-swatch {
+  width: 34px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--rule);
+  background: none;
+  cursor: pointer;
+}
+.term-bg-swatch::-webkit-color-swatch-wrapper { padding: 2px; }
+.term-bg-swatch::-webkit-color-swatch { border: 0; }
+.term-bg-swatch::-moz-color-swatch { border: 0; }
+
+/* Shows the chosen face and background against real terminal colours, so the
+   choice is made by looking rather than by imagining. */
+.term-preview-row { display: block; }
+
+.term-preview {
+  border: 1px solid var(--rule);
+  padding: 12px 14px;
+  font-size: 12px;
+  line-height: 1.7;
+  white-space: nowrap;
+  overflow-x: auto;
 }
 
 /* ── Theme picker helpers ────────────────────────────────────────────────────*/
@@ -5103,6 +5399,196 @@ textarea.mono,
 
 .fwd-arrow { font-family: var(--font-mono); color: var(--ink-accent); }
 
+/* ── Vault history ───────────────────────────────────────────────────────────*/
+
+/* Event-type tag. The colour is supplied per event; the shape is the same
+   hatched tag the sidebar uses for auth methods. */
+.history-tag {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 2px 5px;
+  border: 1px solid var(--rule);
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent 0 4px,
+    color-mix(in srgb, var(--ink-paper) 6%, transparent) 4px 8px
+  );
+}
+
+/* ── Terminal find bar ───────────────────────────────────────────────────────*/
+
+/* "3/47". Tabular numerals so the bar doesn't twitch as the index changes. */
+.term-search-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  min-width: 44px;
+  text-align: right;
+  color: color-mix(in srgb, var(--ink-paper) 45%, transparent);
+  flex: none;
+}
+
+/* A query that matches nothing should say so, not fail silently. */
+.term-search-count.none { color: var(--red); }
+
+.term-search-opt {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 5px 6px;
+  min-width: 24px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: color-mix(in srgb, var(--ink-paper) 45%, transparent);
+  cursor: pointer;
+  flex: none;
+  transition: color 140ms ease, background-color 140ms ease, border-color 140ms ease;
+}
+
+.term-search-opt:hover {
+  color: var(--ink-paper);
+  background: color-mix(in srgb, var(--ink-paper) 9%, transparent);
+}
+
+.term-search-opt.on {
+  color: var(--bg);
+  background: var(--ink-accent);
+  border-color: var(--ink-accent);
+}
+
+/* ── Port-forward patch diagram ──────────────────────────────────────────────
+ * Three stations on one wire, the same idiom the kino-control landing page uses
+ * for the relay path. It exists to answer the question the old "a - b" text
+ * couldn't: which end opens the port, and which way does traffic flow.
+ */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.fwd-diagram {
+  display: grid;
+  /* The endpoints carry the addresses, which are the whole point; the middle
+     station only names the tunnel, so it gets the smallest share. Equal thirds
+     truncated every address to "localhost:5…". */
+  grid-template-columns: 1fr auto minmax(0, 0.55fr) auto 1fr;
+  align-items: stretch;
+  gap: 0;
+  margin-top: 8px;
+}
+
+.fwd-node {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--rule);
+  /* Heavier top rule, like every other slab in the app. */
+  border-top: 2px solid color-mix(in srgb, var(--ink-paper) 20%, transparent);
+}
+
+.fwd-diagram.live .fwd-node {
+  border-top-color: var(--ink-verdigris);
+}
+
+.fwd-node-place {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink-paper) 40%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fwd-node-addr {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-paper);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The rail between two stations: a dashed run with the direction marked. */
+.fwd-rail {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  flex: none;
+}
+
+.fwd-rail::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  background: repeating-linear-gradient(
+    to right,
+    color-mix(in srgb, var(--ink-paper) 30%, transparent) 0 4px,
+    transparent 4px 8px
+  );
+}
+
+.fwd-rail .fwd-arrow {
+  position: relative;
+  font-size: 9px;
+  line-height: 1;
+  padding: 0 2px;
+  background: var(--surface);
+  color: color-mix(in srgb, var(--ink-paper) 35%, transparent);
+}
+
+.fwd-diagram.live .fwd-rail .fwd-arrow { color: var(--ink-verdigris); }
+
+/* A carrier travelling the wire while the tunnel is up. Two of them, the second
+   offset, so the eye follows the path across both hops rather than seeing two
+   unrelated blips. */
+.fwd-pulse {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 5px;
+  height: 5px;
+  margin-top: -2px;
+  background: var(--ink-verdigris);
+  animation: fwd-travel 1.8s linear infinite;
+}
+
+.fwd-pulse--late { animation-delay: 0.9s; }
+
+@keyframes fwd-travel {
+  from { left: 0; opacity: 0; }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  to   { left: calc(100% - 5px); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* A looping pulse has no still frame worth keeping; the live border and
+     arrow colour already carry the state. */
+  .fwd-pulse { display: none; }
+}
+
 /* ── Pane name ───────────────────────────────────────────────────────────────*/
 
 .pane-name-label,
@@ -5387,7 +5873,7 @@ textarea.mono,
 
 /* Grain is a film artefact. On paper-white it stops reading as texture and
    starts reading as a dirty screen, so it's pulled most of the way down. */
-:root[data-theme-dark="0"] :is(.app-root, .unlock-screen)::after {
+:root[data-theme-dark="0"] :is(.app-root, .unlock-screen, .settings-page)::after {
   opacity: 0.14;
 }
 
@@ -5423,3 +5909,93 @@ textarea.mono,
   .filmstrip { animation: none; }
 }
 
+
+/* ── Layer corrections ───────────────────────────────────────────────────────
+ * These rules are defined earlier in the file with values chosen before the
+ * grain layer existed, when nothing sat above 500. The terminal now occupies
+ * --z-picture, so each of these has to be lifted over it or it renders behind
+ * the terminal - which is exactly what happened to the Tunnels dropdown, the
+ * toast and the command palette.
+ */
+.fwd-dropdown,
+.settings-dropdown,
+.export-dropdown,
+.settings-page,
+.palette-overlay,
+.app-toast {
+  z-index: var(--z-popover);
+}
+
+/* Above the dropdowns it can be opened from. */
+.context-menu {
+  z-index: calc(var(--z-popover) + 10);
+}
+
+.modal-overlay {
+  z-index: var(--z-modal);
+}
+
+/* Opened from inside the Docker modal, so it has to clear its own parent. */
+.docker-logs-overlay {
+  z-index: calc(var(--z-modal) + 10);
+}
+
+/* ── Reduced motion & effects ────────────────────────────────────────────────
+ * One switch for "make this still and cheap". It does two separable things:
+ *
+ *   Motion   Every animation and transition stops - including the fifteen that
+ *            never end on their own: the perforation rail, the carrier pulse on
+ *            each live status pip, the travelling tunnel pulses, the copilot
+ *            caret, the SFTP progress shimmer.
+ *
+ *   Effects  The two costly paints go. The film grain is a full-viewport layer
+ *            with mix-blend-mode, and the page atmosphere is three stacked
+ *            gradients with background-attachment: fixed. Both make the
+ *            compositor redo work on every repaint, which is felt hardest on
+ *            Linux, where WebKitGTK's compositing is the weakest of the three
+ *            platforms.
+ *
+ * What it deliberately keeps is the *form*: type, hairlines, slabs and the
+ * letterpress offsets all still paint, because a hard-edged shadow costs
+ * nothing to draw. The app gets quieter and cheaper, not plainer.
+ */
+:root[data-lite="1"] *,
+:root[data-lite="1"] *::before,
+:root[data-lite="1"] *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Staggered reveals sit at their from-state until their animation runs, so with
+   animation removed the end state has to be asserted - the same trap the
+   prefers-reduced-motion block above has to handle. */
+:root[data-lite="1"] :is(
+  .app-header, .ink-band, .sidebar, .main-area, .wordmark,
+  .host-list .host-item, .home-grid > .home-card,
+  .unlock-card, .unlock-card > *, .app-toast, .palette, .modal
+) {
+  opacity: 1;
+  transform: none;
+  clip-path: none;
+}
+
+/* The grain, and the fixed multi-gradient atmosphere behind it. */
+:root[data-lite="1"] :is(.app-root, .unlock-screen, .settings-page)::after {
+  display: none;
+}
+:root[data-lite="1"] :is(.app-root, .unlock-screen, .settings-page) {
+  background-image: none;
+  background-attachment: scroll;
+}
+
+/* The rail is pure decoration and its animation is the only thing that never
+   idles; without it there is nothing to look at, so it goes entirely. */
+:root[data-lite="1"] .filmstrip { display: none; }
+:root[data-lite="1"] .app-root > .app-header,
+:root[data-lite="1"] .app-root > .app-layout { padding-left: 0; }
+
+/* Chrome can be opaque once there is no atmosphere to let through - one less
+   colour-mix to resolve per surface. */
+:root[data-lite="1"] :is(.app-header, .sidebar, .tab-bar) {
+  background-color: var(--surface);
+}

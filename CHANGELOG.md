@@ -4,6 +4,145 @@ All notable changes to Kino SSH Manager are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.7.1] - 2026-08-06
+
+### Added
+- **Reduced motion & effects** - one switch under **Settings - Appearance** that
+  makes the interface still and cheap to draw. It stops every animation,
+  including the fifteen that otherwise never end (the perforation rail, the
+  carrier pulse on each live status pip, the travelling tunnel pulses, the
+  copilot caret, the SFTP progress shimmer), and drops the two expensive paints:
+  the film grain, which is a full-viewport layer with a blend mode, and the page
+  atmosphere, three stacked gradients pinned with `background-attachment: fixed`.
+  Both make the compositor redo work on every repaint, which is felt hardest on
+  Linux where WebKitGTK's compositing is weakest. The design's *form* is
+  untouched - type, hairlines, slabs and the letterpress offsets all still
+  paint, because a hard-edged shadow is free to draw. Worth turning on if the
+  interface feels sluggish. Separate from the system "reduce motion" setting,
+  which already stops the animations on its own.
+- **Output highlighting** - timestamps, severity words, IP addresses, URLs and
+  file paths are coloured in terminal output, in the spirit of MobaXterm's.
+  Colours come from the active theme's own palette. It is on by default and can
+  be turned off under **Settings - Terminal**. Three deliberate limits keep it
+  from ever getting in the way:
+  - It never touches the alternate screen, so vim, htop, less and every other
+    full-screen program are left exactly as they paint themselves.
+  - It never repaints a line the host has already coloured; the program wins.
+  - It stands aside on large bursts. The pass runs at roughly 5 MB/s, so
+    letting it run unconditionally would have re-created the bottleneck 0.7.x
+    removed. Highlighting is a reading aid, and above about 650 KB/s nobody is
+    reading - so past that it simply passes output straight through.
+  Severity words are matched uppercase-only, so the word "error" in an ordinary
+  sentence is left alone.
+- **Port forwards are drawn, not described** - the Tunnels panel now shows each
+  forward as a three-station patch diagram: which machine opens the port, that
+  it runs through the SSH tunnel, and where it comes out. Previously it read
+  `localhost:5432 - db.internal:5432`, and that dash quietly meant opposite
+  things for a local and a remote forward - which end listens is the classic
+  port-forwarding mistake. Local forwards now say the destination is resolved
+  **server-side**, remote forwards read right-to-left from the host back to this
+  machine, and SOCKS shows its destination as whatever each connection asks for.
+  A live tunnel colours its stations and sends a pulse along the wire.
+- **Find in terminal, finished** - the search bar now reports **how many
+  matches there are and which one you're on** ("3/47"), highlights every match
+  rather than only the current one, and marks each one on the scrollbar so you
+  can see where they sit in the scrollback. Case-sensitive, whole-word and
+  regular-expression toggles sit alongside. The addon supported all of this
+  already; none of it was switched on. Paired with configurable scrollback,
+  searching 200,000 lines is now something you can actually do.
+- **Filter the vault history** - history only ever grows, and had no way in.
+  The filter matches both the message and the event type, so "vault" or
+  "deleted" each narrow it usefully.
+- **Configurable scrollback** - how much terminal history to keep is now a
+  setting (**Settings - Terminal**), from 1,000 lines up to 200,000, instead of
+  being fixed at 5,000. It applies to terminals that are already open, so there
+  is no need to reconnect a live session to change it.
+- **Terminal font and background** - pick from six bundled monospace faces
+  (JetBrains Mono, Fira Code, IBM Plex Mono, Source Code Pro, Inconsolata,
+  Ubuntu Mono) and optionally override the terminal background colour, under
+  **Settings - Terminal**. A live preview shows the choice against the active
+  theme's real terminal colours. Every face ships with the app and is loaded
+  from disk, so terminals render identically on every machine and with no
+  network. Changes apply to open terminals immediately.
+- **Interface font** - choose the face the app itself is set in, under
+  **Settings - Appearance**: Chivo (the default), IBM Plex Sans, Atkinson
+  Hyperlegible, or your system font. Atkinson Hyperlegible is drawn by the
+  Braille Institute to maximise the distinction between easily-confused
+  characters, which is the point of offering the choice at all. The display face
+  used for the wordmark and slab headings is deliberately fixed - it is the Kino
+  Projection identity rather than a preference.
+- **Clear scrollback** - discard a terminal's history from the toolbar, the
+  command palette, or **Ctrl+Shift+K** (rebindable under Shortcuts). It clears
+  the visible scrollback, the buffer used to repaint a terminal after a pane
+  move, and the "Save log" capture - so what you cleared doesn't reappear later
+  in a saved log.
+
+### Fixed
+- **Overlays no longer render behind the terminal.** The Tunnels dropdown, the
+  toast and the command palette were all being painted underneath it. The film
+  grain introduced in 0.7.0 sits above the app chrome, and the terminal was
+  lifted above the grain to keep its text clean - which also lifted it above
+  almost every overlay in the app. There is now one documented layer scale
+  (chrome, grain, picture, popover, modal) and everything that must appear over
+  the terminal sits above it. The Docker log viewer was also sitting *below* the
+  Docker window it opens from, and is fixed by the same scale.
+- **Four dialogs were referencing CSS variables that don't exist.** The vault
+  history, cloud sync, snippets and change-password dialogs styled themselves
+  with `--color-surface`, `--color-border`, `--color-text-dim` and similar - none
+  of which are defined anywhere in the app. Every one of those declarations was
+  invalid and silently did nothing, so those dialogs had drifted out of the
+  design language entirely. They now use the real names. The history dialog's
+  event tags were also hardcoded to Catppuccin colours and ignored the active
+  theme; they follow it now.
+- **The host export menu no longer vanishes when you reach for it.** The row's
+  action buttons are revealed on hover, and the export menu hangs below the row,
+  so moving the pointer down into the menu left the row and faded the menu out
+  mid-click. Because a fully transparent element still accepts clicks, the menu
+  was invisible but live. The actions now stay put while the pointer is over the
+  row, while focus is inside it, or while the menu is open. The delete button's
+  "click again to confirm" state was disappearing the same way and is fixed with
+  it.
+- **The primary button no longer collides with scrollbars.** Its letterpress
+  shadow is painted outside the button's box and, like every box-shadow, takes
+  part in no layout - so a panel's padding never held room for it, and flush
+  against the right edge of a scrolling area it ran into the scrollbar. The
+  button now reserves the space its shadow actually occupies.
+
+- **The export menu is no longer clipped by the host list.** It was positioned
+  inside the sidebar's scrolling list, which cuts off anything that overflows it,
+  so for any host low in the list the menu was sliced down to its heading. It is
+  now positioned against the window instead, and flips above the button when
+  there isn't room below.
+
+### Changed
+- **Terminal throughput** - heavy output (a build log, `cat` on a large file, a
+  chatty tail) no longer stalls the terminal. Two independent bottlenecks were
+  removed:
+  - The two rolling buffers behind "Save log" and pane-to-pane replay were
+    rebuilt with `(buf + text).slice(-cap)` on **every** packet, re-copying up
+    to 6 MB once they reached their caps. They are now chunked rings, so an
+    append costs time proportional to that packet rather than to everything
+    already buffered. Measured in JavaScriptCore - the engine the Linux build
+    runs on - 4.1 MB of output went from ~3,200 ms to ~2 ms on this path, and a
+    hard ~1.3 MB/s ceiling disappeared with it.
+  - Output is now **coalesced** before crossing into the webview. Each `emit`
+    costs a JSON serialisation plus a JavaScript `eval` in the webview - on
+    Linux, a cross-process hop into WebKitGTK - and the SSH read loop was paying
+    that per packet. Bytes arriving inside a ~12 ms window are batched into one
+    event, which is 14-62x fewer round-trips on a fast stream. The first packet
+    after an idle period is still sent immediately, so keystroke echo is exactly
+    as responsive as before; batches are capped at 256 KB, and anything still
+    buffered is flushed before a session reports itself closed. Applies to both
+    SSH sessions and local shells. Session recordings are unaffected - output is
+    still recorded as it arrives, so asciicast timing keeps the host's original
+    pacing.
+- **Renderer is no longer a mystery** - the terminal now reports whether it got
+  the GPU (`webgl`) or the software fallback (`dom`) when a session opens. It
+  prints to the app's own log, and **About** shows it too, so the question is
+  answerable in a release build where there is no web inspector. On Linux,
+  WebKitGTK frequently has no usable GL context and silently drops to the much
+  slower DOM renderer; a context lost mid-session is reported as well.
+
 ## [0.7.0] - 2026-07-31
 
 ### Added

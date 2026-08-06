@@ -879,6 +879,15 @@ fn spawn_relay(
 
         let mut recorder: Option<crate::recorder::Recorder> = None;
 
+        // Batch output on its way to the webview; see crate::coalesce for why.
+        // Event names are built once - they were being reformatted per packet.
+        let mut batcher = crate::coalesce::Coalescer::new(
+            crate::coalesce::WINDOW,
+            crate::coalesce::MAX_BATCH,
+        );
+        let data_event = format!("ssh-data-{}", session_id);
+        let closed_event = format!("ssh-closed-{}", session_id);
+
         loop {
             tokio::select! {
                 cmd = cmd_rx.recv() => {
@@ -899,8 +908,13 @@ fn spawn_relay(
                         }
                         Some(TermCommand::Close) | None => {
                             let _ = channel.close().await;
+                            // Flush first: anything still batched is output the
+                            // terminal has never seen.
+                            if let Some(tail) = batcher.take() {
+                                app_handle.emit(&data_event, tail).ok();
+                            }
                             sessions.lock().unwrap().remove(&session_id);
-                            app_handle.emit(&format!("ssh-closed-{}", session_id), ()).ok();
+                            app_handle.emit(&closed_event, ()).ok();
                             return;
                         }
                     }
@@ -908,17 +922,36 @@ fn spawn_relay(
                 msg = channel.wait() => {
                     match msg {
                         Some(ChannelMsg::Data { ref data }) | Some(ChannelMsg::ExtendedData { ref data, .. }) => {
+                            // Record every packet as it lands, not per batch, so
+                            // an asciicast keeps the host's original timing.
                             if let Some(ref mut rec) = recorder {
                                 let _ = rec.record_output(data.as_ref());
                             }
-                            app_handle.emit(&format!("ssh-data-{}", session_id), data.as_ref()).ok();
+                            if let Some(out) = batcher.push(data.as_ref(), std::time::Instant::now()) {
+                                app_handle.emit(&data_event, out).ok();
+                            }
                         }
                         Some(ChannelMsg::Eof) | Some(ChannelMsg::Close) | None => {
+                            if let Some(tail) = batcher.take() {
+                                app_handle.emit(&data_event, tail).ok();
+                            }
                             sessions.lock().unwrap().remove(&session_id);
-                            app_handle.emit(&format!("ssh-closed-{}", session_id), ()).ok();
+                            app_handle.emit(&closed_event, ()).ok();
                             return;
                         }
                         _ => {}
+                    }
+                }
+                // Fires only while a burst is in flight; idle sessions park on
+                // `pending()` and cost nothing.
+                _ = async {
+                    match batcher.deadline() {
+                        Some(d) => tokio::time::sleep_until(tokio::time::Instant::from_std(d)).await,
+                        None => std::future::pending::<()>().await,
+                    }
+                } => {
+                    if let Some(out) = batcher.on_deadline(std::time::Instant::now()) {
+                        app_handle.emit(&data_event, out).ok();
                     }
                 }
             }

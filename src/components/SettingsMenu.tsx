@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { THEMES } from "../themes";
-import { useVaultStore } from "../store";
+import { APP_FONTS, TERMINAL_FONTS, terminalFontStack, useVaultStore } from "../store";
 import { HistoryModal } from "./HistoryModal";
 import { SyncModal } from "./SyncModal";
 import { SnippetsModal } from "./SnippetsModal";
@@ -134,12 +134,29 @@ export function SettingsMenu({ onLock }: Props) {
     setRestoreSessionEnabled,
     healthIntervalSec,
     setHealthIntervalSec,
+    scrollbackLines,
+    setScrollbackLines,
+    terminalFont,
+    setTerminalFont,
+    terminalBackground,
+    setTerminalBackground,
+    appFont,
+    setAppFont,
+    syntaxHighlight,
+    setSyntaxHighlight,
+    liteMode,
+    setLiteMode,
     autoReconnect,
     setAutoReconnect,
     exportSshConfig,
     cloudGetConfig,
     cloudSetConfig,
   } = useVaultStore();
+
+  // Terminal colours of the active theme - the preview and the colour picker's
+  // starting value both need them.
+  const currentTerm = (THEMES.find((t) => t.id === themeId) ?? THEMES[0]).term;
+  const currentTermBg = currentTerm.background;
 
   const [open, setOpen] = useState(false);
   const [section, setSection] = useState<Section>("general");
@@ -301,6 +318,30 @@ export function SettingsMenu({ onLock }: Props) {
                         </optgroup>
                       </select>
                     </Item>
+
+                    <Item
+                      label="Reduced motion & effects"
+                      desc="Stops every animation and drops the film grain and background gradients. Lighter to draw - worth turning on if the interface feels sluggish."
+                    >
+                      <OnOff value={liteMode} onChange={setLiteMode} />
+                    </Item>
+
+                    <Item
+                      label="Interface font"
+                      desc="The face used for the app's own text. Atkinson Hyperlegible is designed for maximum character distinction."
+                    >
+                      <select
+                        className="settings-select"
+                        value={appFont}
+                        onChange={(e) => setAppFont(e.target.value)}
+                      >
+                        {APP_FONTS.map((f) => (
+                          <option key={f.id} value={f.id}>
+                            {f.note ? `${f.label} - ${f.note}` : f.label}
+                          </option>
+                        ))}
+                      </select>
+                    </Item>
                   </Group>
 
                   <Group title="Behavior">
@@ -327,6 +368,91 @@ export function SettingsMenu({ onLock }: Props) {
                         <option value={300}>Every 5 min</option>
                       </select>
                     </Item>
+                  </Group>
+
+                  <Group
+                    title="Terminal"
+                    desc="Applies to every open terminal straight away - no need to reconnect."
+                  >
+                    <Item
+                      label="Scrollback"
+                      desc="Lines of history kept per terminal. More costs memory; Maximum is 200,000 lines."
+                    >
+                      <select
+                        className="settings-select"
+                        value={scrollbackLines}
+                        onChange={(e) => setScrollbackLines(Number(e.target.value))}
+                      >
+                        <option value={1000}>1,000</option>
+                        <option value={5000}>5,000</option>
+                        <option value={20000}>20,000</option>
+                        <option value={50000}>50,000</option>
+                        <option value={200000}>Maximum</option>
+                      </select>
+                    </Item>
+
+                    <Item
+                      label="Font"
+                      desc="Bundled with the app, so it renders the same on every machine and offline."
+                    >
+                      <select
+                        className="settings-select"
+                        value={terminalFont}
+                        onChange={(e) => setTerminalFont(e.target.value)}
+                      >
+                        {TERMINAL_FONTS.map((f) => (
+                          <option key={f} value={f}>{f}</option>
+                        ))}
+                      </select>
+                    </Item>
+
+                    <Item
+                      label="Background"
+                      desc="Overrides the theme's terminal background. Leave on Theme default to follow it."
+                    >
+                      <div className="term-bg-control">
+                        <input
+                          type="color"
+                          className="term-bg-swatch"
+                          aria-label="Terminal background colour"
+                          value={terminalBackground || currentTermBg}
+                          onChange={(e) => setTerminalBackground(e.target.value)}
+                        />
+                        <button
+                          className="settings-btn"
+                          onClick={() => setTerminalBackground("")}
+                          disabled={!terminalBackground}
+                        >
+                          {terminalBackground ? "Reset" : "Theme default"}
+                        </button>
+                      </div>
+                    </Item>
+
+                    <Item
+                      label="Highlight output"
+                      desc="Colours timestamps, severities, IPs, URLs and paths in output the host hasn't already coloured. Never applied inside full-screen programs like vim, htop or less."
+                    >
+                      <OnOff value={syntaxHighlight} onChange={setSyntaxHighlight} />
+                    </Item>
+
+                    <div className="settings-item term-preview-row">
+                      <div
+                        className="term-preview"
+                        style={{
+                          fontFamily: terminalFontStack(terminalFont),
+                          background: terminalBackground || currentTermBg,
+                        }}
+                      >
+                        <span style={{ color: currentTerm.green }}>user@prod-edge-01</span>
+                        <span style={{ color: currentTerm.foreground }}>:</span>
+                        <span style={{ color: currentTerm.blue }}>~</span>
+                        <span style={{ color: currentTerm.foreground }}>$ tail -f /var/log/syslog</span>
+                        <br />
+                        <span style={{ color: currentTerm.brightBlack }}>Aug 04 15:32:11 </span>
+                        <span style={{ color: currentTerm.red }}>ERROR</span>
+                        <span style={{ color: currentTerm.foreground }}> connection refused 10.0.4.21:22</span>
+                      </div>
+                    </div>
                   </Group>
                 </>
               )}

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { AiConfigView, AiMessage, Host, useVaultStore } from "../store";
-import { getTerminalOutput } from "../terminalBuffer";
+import { getTerminalOutputTail } from "../terminalBuffer";
 import { pasteToSession } from "../terminalRegistry";
 import { hostTarget } from "../utils";
 
@@ -126,7 +126,9 @@ export function CopilotPanel({ sessionId, host, local, title, initialPrompt, onC
       if (host.notes) parts.push(`Notes about this host: ${host.notes}`);
     }
     if (attachOutput) {
-      const tail = stripAnsi(getTerminalOutput(sessionId) ?? "").slice(-TERMINAL_TAIL_CHARS);
+      // Read the tail directly: joining the whole 2 MB buffer and then slicing
+      // 6 000 characters off the end wastes most of the work.
+      const tail = stripAnsi(getTerminalOutputTail(sessionId, TERMINAL_TAIL_CHARS));
       if (tail.trim()) {
         parts.push(
           "",

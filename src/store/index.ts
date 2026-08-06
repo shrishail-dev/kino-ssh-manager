@@ -1,7 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
 import { clearTerminalOutput } from "../terminalBuffer";
+import { forEachTerminal } from "../terminalRegistry";
 import { DEFAULT_KEYBINDINGS, KeyActionId } from "../keymap";
+import { THEMES } from "../themes";
 
 export type DefaultAuth = "Password" | "SshKey" | "Agent";
 
@@ -294,6 +296,18 @@ interface VaultStore {
   hostHealth: Record<string, HostHealth>;
   /** Seconds between health sweeps; 0 disables the poll entirely. */
   healthIntervalSec: number;
+  /** xterm scrollback lines kept per terminal. */
+  scrollbackLines: number;
+  /** Bundled monospace family used by terminals. */
+  terminalFont: string;
+  /** Hex background override for terminals; "" follows the active theme. */
+  terminalBackground: string;
+  /** Interface font family (the app chrome, not the terminal). */
+  appFont: string;
+  /** Colour recognised patterns in terminal output (see src/highlight.ts). */
+  syntaxHighlight: boolean;
+  /** Stop all motion and drop the expensive decorative paint. */
+  liteMode: boolean;
   /** When true, dropped SSH sessions auto-reconnect with exponential backoff. */
   autoReconnect: boolean;
   /** When true, keystrokes in the focused terminal fan out to every visible pane. */
@@ -318,6 +332,12 @@ interface VaultStore {
   /** Pin/unpin a host from the home panel. */
   toggleFavoriteHost: (id: string) => void;
   setHealthIntervalSec: (seconds: number) => void;
+  setScrollbackLines: (lines: number) => void;
+  setTerminalFont: (family: string) => void;
+  setTerminalBackground: (hex: string) => void;
+  setAppFont: (family: string) => void;
+  setSyntaxHighlight: (on: boolean) => void;
+  setLiteMode: (on: boolean) => void;
   /** Probe every host once and merge the results into `hostHealth`. */
   checkHostsHealth: () => Promise<void>;
   setAutoReconnect: (on: boolean) => void;
@@ -477,6 +497,71 @@ function initialFavorites(): string[] {
 // Host health polling is opt-in: each sweep opens a short-lived TCP connection
 // to every host, which shows up in server logs. 0 means off.
 const HEALTH_INTERVAL_KEY = "ssh-mgr:health-interval";
+const SCROLLBACK_KEY = "ssh-mgr:scrollback";
+const TERM_FONT_KEY = "ssh-mgr:term-font";
+const TERM_BG_KEY = "ssh-mgr:term-bg";
+const APP_FONT_KEY = "ssh-mgr:app-font";
+const HIGHLIGHT_KEY = "ssh-mgr:syntax-highlight";
+const LITE_KEY = "ssh-mgr:lite";
+
+/**
+ * Push the reduced-motion/effects flag at the document.
+ *
+ * A data attribute rather than a class so it reads the same way as
+ * data-theme-dark, and so the whole switch is one CSS block keyed off :root.
+ */
+export function applyLiteMode(on: boolean): void {
+  document.documentElement.dataset.lite = on ? "1" : "0";
+}
+
+/** Interface faces. The display face (Big Shoulders, used for the wordmark and
+ *  slab headings) is deliberately not swappable - it *is* the Kino Projection
+ *  identity. This picks the face used for everything you read in a sentence. */
+export const APP_FONTS = [
+  { id: "Chivo", label: "Chivo", note: "Default" },
+  { id: "IBM Plex Sans", label: "IBM Plex Sans", note: "" },
+  { id: "Atkinson Hyperlegible", label: "Atkinson Hyperlegible", note: "High legibility" },
+  { id: "system", label: "System default", note: "" },
+] as const;
+
+export const DEFAULT_APP_FONT = "Chivo";
+
+/** Push the choice at the CSS variable the whole interface reads from. */
+export function applyAppFont(family: string): void {
+  const stack =
+    family === "system"
+      ? 'system-ui, -apple-system, "Segoe UI", sans-serif'
+      : `"${family}", "Chivo", ui-sans-serif, system-ui, sans-serif`;
+  document.documentElement.style.setProperty("--font-sans", stack);
+}
+
+/** Families bundled under public/fonts and declared in index.css. Anything not
+ *  on this list has no @font-face, so it would silently fall back. */
+export const TERMINAL_FONTS = [
+  "JetBrains Mono",
+  "Fira Code",
+  "IBM Plex Mono",
+  "Source Code Pro",
+  "Inconsolata",
+  "Ubuntu Mono",
+] as const;
+
+export const DEFAULT_TERMINAL_FONT = "JetBrains Mono";
+
+/** Always end the stack with a generic monospace: xterm assumes a fixed grid,
+ *  and a proportional fallback would break alignment outright. */
+export function terminalFontStack(family: string): string {
+  return `"${family}", "JetBrains Mono", monospace`;
+}
+
+/** Lines of scrollback per terminal. xterm's own default is 1000; 5000 was
+ *  hardcoded here before this became a setting, so it stays the default. */
+export const DEFAULT_SCROLLBACK = 5000;
+function initialScrollback(): number {
+  const n = Number(localStorage.getItem(SCROLLBACK_KEY));
+  return Number.isFinite(n) && n >= 0 ? n : DEFAULT_SCROLLBACK;
+}
+
 function initialHealthInterval(): number {
   const n = Number(localStorage.getItem(HEALTH_INTERVAL_KEY));
   return Number.isFinite(n) && n > 0 ? n : 0;
@@ -579,6 +664,16 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
   favoriteHostIds: initialFavorites(),
   hostHealth: {},
   healthIntervalSec: initialHealthInterval(),
+  scrollbackLines: initialScrollback(),
+  terminalFont: localStorage.getItem(TERM_FONT_KEY) || DEFAULT_TERMINAL_FONT,
+  terminalBackground: localStorage.getItem(TERM_BG_KEY) ?? "",
+  appFont: localStorage.getItem(APP_FONT_KEY) || DEFAULT_APP_FONT,
+  // On unless explicitly turned off: it is display-only, heavily guarded, and a
+  // feature nobody discovers is a feature that was not shipped.
+  syntaxHighlight: localStorage.getItem(HIGHLIGHT_KEY) !== "0",
+  // Off unless asked for. The OS "reduce motion" preference already stops the
+  // animations on its own; this is the switch for wanting it cheaper as well.
+  liteMode: localStorage.getItem(LITE_KEY) === "1",
   // Auto-reconnect defaults on; broadcast is a transient per-run toggle (off).
   autoReconnect: localStorage.getItem("ssh-mgr:auto-reconnect") !== "0",
   broadcastInput: false,
@@ -638,6 +733,54 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
     // Turning it off drops the stored layout so nothing lingers on disk.
     if (!on) localStorage.removeItem(SESSION_KEY);
     set({ restoreSessionEnabled: on });
+  },
+
+  setScrollbackLines: (lines) => {
+    const n = Math.max(0, Math.min(200_000, Math.floor(lines) || 0));
+    localStorage.setItem(SCROLLBACK_KEY, String(n));
+    set({ scrollbackLines: n });
+    // Apply to terminals that are already open, so the change is visible
+    // without reconnecting. Shrinking discards the oldest lines immediately.
+    forEachTerminal((t) => { t.options.scrollback = n; });
+  },
+
+  setTerminalFont: (family) => {
+    const f = (TERMINAL_FONTS as readonly string[]).includes(family) ? family : DEFAULT_TERMINAL_FONT;
+    localStorage.setItem(TERM_FONT_KEY, f);
+    set({ terminalFont: f });
+    forEachTerminal((t) => { t.options.fontFamily = terminalFontStack(f); });
+  },
+
+  setTerminalBackground: (hex) => {
+    // "" means "follow the theme"; anything else must be a hex colour, since it
+    // goes straight into xterm's theme object.
+    const v = /^#[0-9a-fA-F]{6}$/.test(hex) ? hex.toLowerCase() : "";
+    localStorage.setItem(TERM_BG_KEY, v);
+    set({ terminalBackground: v });
+    const base = THEMES.find((t) => t.id === get().theme) ?? THEMES[0];
+    forEachTerminal((t) => {
+      t.options.theme = { ...base.term, background: v || base.term.background };
+    });
+  },
+
+  setAppFont: (family) => {
+    const f = (APP_FONTS as readonly { id: string }[]).some((a) => a.id === family)
+      ? family
+      : DEFAULT_APP_FONT;
+    localStorage.setItem(APP_FONT_KEY, f);
+    set({ appFont: f });
+    applyAppFont(f);
+  },
+
+  setLiteMode: (on) => {
+    localStorage.setItem(LITE_KEY, on ? "1" : "0");
+    set({ liteMode: on });
+    applyLiteMode(on);
+  },
+
+  setSyntaxHighlight: (on) => {
+    localStorage.setItem(HIGHLIGHT_KEY, on ? "1" : "0");
+    set({ syntaxHighlight: on });
   },
 
   setHealthIntervalSec: (seconds) => {

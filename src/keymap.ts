@@ -14,7 +14,8 @@ export type KeyActionId =
   | "term-paste"
   | "term-font-inc"
   | "term-font-dec"
-  | "term-font-reset";
+  | "term-font-reset"
+  | "term-clear";
 
 export interface KeyAction {
   id: KeyActionId;
@@ -39,6 +40,7 @@ export const KEY_ACTIONS: KeyAction[] = [
   { id: "term-font-inc", label: "Increase font size", category: "Terminal", default: "Ctrl+=" },
   { id: "term-font-dec", label: "Decrease font size", category: "Terminal", default: "Ctrl+-" },
   { id: "term-font-reset", label: "Reset font size", category: "Terminal", default: "Ctrl+0" },
+  { id: "term-clear", label: "Clear scrollback", category: "Terminal", default: "Ctrl+Shift+K" },
 ];
 
 export const DEFAULT_KEYBINDINGS: Record<KeyActionId, string> = KEY_ACTIONS.reduce(

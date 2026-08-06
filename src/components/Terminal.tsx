@@ -9,12 +9,13 @@ import { WebLinksAddon } from "@xterm/addon-web-links";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal as XTerm } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
-import { Host, Tab, useVaultStore } from "../store";
+import { Host, Tab, terminalFontStack, useVaultStore } from "../store";
 import { comboFromEvent } from "../keymap";
 import { toast } from "../utils";
 import { THEMES } from "../themes";
-import { appendTerminalOutput, getTerminalOutput } from "../terminalBuffer";
-import { registerTerminal, unregisterTerminal } from "../terminalRegistry";
+import { appendTerminalOutput, clearTerminalOutput, getTerminalOutput, RollingText } from "../terminalBuffer";
+import { registerClearHandler, registerTerminal, unregisterTerminal } from "../terminalRegistry";
+import { highlightChunk } from "../highlight";
 
 interface Props {
   sessionId: string;
@@ -45,9 +46,19 @@ export function Terminal({ sessionId, kind, active, tabId, host, onExplain }: Pr
   const termRef = useRef<XTerm | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
   const searchRef = useRef<SearchAddon | null>(null);
-  const logRef = useRef<string>("");
+  // Set by the mount effect so the toolbar button, which renders outside it,
+  // can trigger the same action as the keybinding.
+  const clearScrollbackRef = useRef<() => void>(() => {});
+  // Lazily constructed so a re-render doesn't allocate a throwaway buffer.
+  const logRef = useRef<RollingText | null>(null);
+  if (logRef.current === null) logRef.current = new RollingText(4_000_000);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpts, setSearchOpts] = useState({ caseSensitive: false, wholeWord: false, regex: false });
+  // Reported by the addon after every search: how many matches, and which one
+  // is selected. Without it the search box gave no sign whether a query matched
+  // twice or two hundred times.
+  const [searchHits, setSearchHits] = useState<{ index: number; count: number } | null>(null);
   // Floating "Copy / Explain" tooltip anchored to the mouse when text is selected.
   const [selMenu, setSelMenu] = useState<{ x: number; y: number; text: string } | null>(null);
   // The xterm key handler is installed once at mount; read the latest bindings
@@ -55,6 +66,11 @@ export function Terminal({ sessionId, kind, active, tabId, host, onExplain }: Pr
   const keybindings = useVaultStore((s) => s.keybindings);
   const keybindingsRef = useRef(keybindings);
   useEffect(() => { keybindingsRef.current = keybindings; }, [keybindings]);
+  // Same pattern: the data listener is installed once, so it reads the current
+  // setting through a ref rather than being torn down when it changes.
+  const syntaxHighlight = useVaultStore((s) => s.syntaxHighlight);
+  const highlightRef = useRef(syntaxHighlight);
+  useEffect(() => { highlightRef.current = syntaxHighlight; }, [syntaxHighlight]);
   const { markTabDisconnected, theme: themeId } = useVaultStore();
 
   // Auto-reconnect: -1 countdown = permanently failed; otherwise seconds left.
@@ -114,18 +130,23 @@ export function Terminal({ sessionId, kind, active, tabId, host, onExplain }: Pr
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Read theme at mount time via getState so we don't need it in deps
-    const { theme: currentThemeId } = useVaultStore.getState();
+    // Initialised during render, so it's non-null by the time any effect runs.
+    const log = logRef.current!;
+
+    // Read theme + terminal prefs at mount time via getState so they don't need
+    // to be effect deps (which would tear down and rebuild the terminal).
+    const { theme: currentThemeId, scrollbackLines, terminalFont, terminalBackground } =
+      useVaultStore.getState();
     const t = THEMES.find((t) => t.id === currentThemeId) ?? THEMES[0];
 
     const savedFont = Number(localStorage.getItem("ssh-mgr:term-fontsize") ?? "14") || 14;
     const term = new XTerm({
       cursorBlink: true,
       fontSize: savedFont,
-      fontFamily: '"JetBrains Mono", "Fira Code", "Cascadia Code", monospace',
-      theme: t.term,
+      fontFamily: terminalFontStack(terminalFont),
+      theme: { ...t.term, background: terminalBackground || t.term.background },
       allowTransparency: false,
-      scrollback: 5000,
+      scrollback: scrollbackLines,
     });
 
     const fitAddon = new FitAddon();
@@ -137,6 +158,10 @@ export function Terminal({ sessionId, kind, active, tabId, host, onExplain }: Pr
 
     term.loadAddon(fitAddon);
     term.loadAddon(searchAddon);
+    // resultIndex is -1 when nothing matches (or the query is empty).
+    searchAddon.onDidChangeResults((e) =>
+      setSearchHits(e.resultCount > 0 ? { index: e.resultIndex + 1, count: e.resultCount } : null)
+    );
     term.loadAddon(webLinksAddon);
 
     term.open(containerRef.current);
@@ -144,12 +169,28 @@ export function Terminal({ sessionId, kind, active, tabId, host, onExplain }: Pr
     // WebGL rendering is much cheaper on busy terminals, but needs a GL context
     // and must load after open(). Fall back to the default renderer if either
     // the context can't be created or it's lost later (e.g. GPU reset).
+    // Which renderer we actually got matters a lot on Linux, where WebKitGTK
+    // often has no usable GL context and silently leaves us on the much slower
+    // DOM renderer. Say so in the console rather than leaving it a mystery.
+    // Reported to the backend as well as the console: console.* only reaches
+    // the webview inspector, which `tauri dev` never shows and release builds
+    // don't have. localStorage lets About show it without a terminal open.
+    const noteRenderer = (renderer: "webgl" | "dom", detail?: string) => {
+      localStorage.setItem("ssh-mgr:renderer", renderer);
+      console.info(`[kino] terminal renderer: ${renderer}${detail ? ` (${detail})` : ""}`);
+      invoke("report_terminal_renderer", { renderer, detail: detail ?? null }).catch(() => {});
+    };
+
     try {
       const webgl = new WebglAddon();
-      webgl.onContextLoss(() => webgl.dispose());
+      webgl.onContextLoss(() => {
+        noteRenderer("dom", "WebGL context lost");
+        webgl.dispose();
+      });
       term.loadAddon(webgl);
-    } catch {
-      // No WebGL available - the DOM renderer stays in place.
+      noteRenderer("webgl");
+    } catch (e) {
+      noteRenderer("dom", e instanceof Error ? e.message : String(e));
     }
 
     // OSC 52: let the remote side (tmux/vim "+y) put text on the local clipboard.
@@ -193,7 +234,7 @@ export function Terminal({ sessionId, kind, active, tabId, host, onExplain }: Pr
     const prior = getTerminalOutput(sessionId);
     if (prior) {
       term.write(prior);
-      logRef.current = prior;
+      log.reset(prior);
     }
 
     // Ctrl+F search, Ctrl +/-/0 font size - intercepted before the shell sees them.
@@ -248,6 +289,9 @@ export function Terminal({ sessionId, kind, active, tabId, host, onExplain }: Pr
         case kb["term-font-reset"]:
           applyFont(14);
           return swallow();
+        case kb["term-clear"]:
+          clearScrollback();
+          return swallow();
         default:
           return true;
       }
@@ -273,16 +317,43 @@ export function Terminal({ sessionId, kind, active, tabId, host, onExplain }: Pr
       invoke(writeCommand, { sessionId, data: bytes }).catch(() => {});
     });
 
+    // Forget this terminal's history: the visible scrollback, the buffer used to
+    // repaint after a pane move, and the "Save log" capture. Clearing the screen
+    // but leaving the log full of what you just cleared would be a surprise.
+    const clearScrollback = () => {
+      term.clear();
+      log.reset();
+      clearTerminalOutput(sessionId);
+      toast("Scrollback cleared");
+    };
+    clearScrollbackRef.current = clearScrollback;
+    registerClearHandler(sessionId, clearScrollback);
+
     const decoder = new TextDecoder();
     const unlistenData = listen<number[]>(dataEvent, (event) => {
       const bytes = new Uint8Array(event.payload);
-      term.write(bytes);
-      // Buffer output for "Save log" (cap ~4 MB to bound memory).
       const text = decoder.decode(bytes, { stream: true });
-      logRef.current += text;
-      if (logRef.current.length > 4_000_000) {
-        logRef.current = logRef.current.slice(-4_000_000);
-      }
+
+      // Highlighting rewrites the stream, so it only runs on the normal buffer:
+      // inside the alternate screen (vim, htop, less) a program paints its own
+      // colours and places the cursor exactly, and injected escapes corrupt it.
+      const painted =
+        highlightRef.current && term.buffer.active.type === "normal"
+          ? highlightChunk(text)
+          : null;
+      // Unhighlighted, write the raw bytes: xterm reassembles a multi-byte
+      // character split across packets, whereas the decoded string would have
+      // deferred it.
+      term.write(painted ?? bytes);
+      // Both buffers below are chunked rings (see RollingText): appending is
+      // proportional to this packet, not to the megabytes already held. The
+      // previous `+= text` / `slice(-cap)` pair re-copied ~6 MB per packet once
+      // full, which is what made heavy output crawl.
+      //
+      // They keep the *raw* text, not the painted version, so a saved log has
+      // no injected escapes in it.
+      // Buffer output for "Save log" (cap ~4 MB to bound memory).
+      log.append(text);
       // Also feed the cross-mount buffer so a moved terminal can repaint.
       appendTerminalOutput(sessionId, text);
     });
@@ -341,7 +412,9 @@ export function Terminal({ sessionId, kind, active, tabId, host, onExplain }: Pr
   useEffect(() => {
     if (!termRef.current) return;
     const t = THEMES.find((t) => t.id === themeId) ?? THEMES[0];
-    termRef.current.options.theme = t.term;
+    // Keep honouring the background override when the theme changes underneath.
+    const bg = useVaultStore.getState().terminalBackground;
+    termRef.current.options.theme = { ...t.term, background: bg || t.term.background };
   }, [themeId]);
 
   useEffect(() => {
@@ -351,16 +424,59 @@ export function Terminal({ sessionId, kind, active, tabId, host, onExplain }: Pr
     }
   }, [active]);
 
+  /**
+   * Search options, including the decorations that mark every hit.
+   *
+   * The colours come from the active theme's own ANSI palette rather than the
+   * chrome ink, because they are painted onto terminal cells and have to sit
+   * legibly against whatever the terminal's background is. Matches get a subtle
+   * fill; the selected one gets an outline instead of a brighter fill, which
+   * stays readable no matter how light a theme's accent happens to be.
+   */
+  function searchOptions(extra?: { incremental?: boolean }) {
+    const t = (THEMES.find((x) => x.id === useVaultStore.getState().theme) ?? THEMES[0]).term;
+    return {
+      ...searchOpts,
+      ...extra,
+      decorations: {
+        matchBackground: t.brightBlack,
+        matchOverviewRuler: t.yellow,
+        activeMatchBorder: t.yellow,
+        activeMatchColorOverviewRuler: t.cyan,
+      },
+    };
+  }
+
   function runSearch(query: string, forward: boolean) {
     if (!query) return;
-    if (forward) searchRef.current?.findNext(query);
-    else searchRef.current?.findPrevious(query);
+    const opts = searchOptions();
+    if (forward) searchRef.current?.findNext(query, opts);
+    else searchRef.current?.findPrevious(query, opts);
+  }
+
+  /** Re-run from the top when a toggle changes, so the result set updates. */
+  function setOpt(key: "caseSensitive" | "wholeWord" | "regex", value: boolean) {
+    const next = { ...searchOpts, [key]: value };
+    setSearchOpts(next);
+    if (searchQuery) {
+      const t = (THEMES.find((x) => x.id === useVaultStore.getState().theme) ?? THEMES[0]).term;
+      searchRef.current?.findNext(searchQuery, {
+        ...next,
+        incremental: true,
+        decorations: {
+          matchBackground: t.brightBlack,
+          matchOverviewRuler: t.yellow,
+          activeMatchBorder: t.yellow,
+          activeMatchColorOverviewRuler: t.cyan,
+        },
+      });
+    }
   }
 
   async function saveLog() {
     // Strip ANSI escape sequences for a readable plaintext log.
     // eslint-disable-next-line no-control-regex
-    const clean = logRef.current.replace(/\x1b\[[0-9;?]*[ -/]*[@-~]/g, "");
+    const clean = logRef.current!.toString().replace(/\x1b\[[0-9;?]*[ -/]*[@-~]/g, "");
     const path = await saveDialog({ defaultPath: `session-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.log` });
     if (!path) return;
     await invoke("save_session_log", { content: clean, path }).catch((e) => console.error(e));
@@ -436,6 +552,17 @@ export function Terminal({ sessionId, kind, active, tabId, host, onExplain }: Pr
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
         </button>
+        <button
+          className="term-tool-btn"
+          title="Clear scrollback (Ctrl+Shift+K)"
+          onClick={() => clearScrollbackRef.current()}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M3 6h18" />
+            <path d="M8 6V4h8v2" />
+            <path d="M19 6l-1 14H6L5 6" />
+          </svg>
+        </button>
         <button className="term-tool-btn" title="Save session log" onClick={saveLog}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -450,12 +577,36 @@ export function Terminal({ sessionId, kind, active, tabId, host, onExplain }: Pr
             autoFocus
             value={searchQuery}
             placeholder="Find in terminal…"
-            onChange={(e) => { setSearchQuery(e.target.value); searchRef.current?.findNext(e.target.value, { incremental: true }); }}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              searchRef.current?.findNext(e.target.value, searchOptions({ incremental: true }));
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter") runSearch(searchQuery, !e.shiftKey);
               if (e.key === "Escape") { setSearchOpen(false); setSearchQuery(""); termRef.current?.focus(); }
             }}
           />
+          <span className={`term-search-count ${searchQuery && !searchHits ? "none" : ""}`}>
+            {!searchQuery ? "" : searchHits ? `${searchHits.index}/${searchHits.count}` : "0"}
+          </span>
+          <button
+            className={`term-search-opt ${searchOpts.caseSensitive ? "on" : ""}`}
+            title="Match case"
+            aria-pressed={searchOpts.caseSensitive}
+            onClick={() => setOpt("caseSensitive", !searchOpts.caseSensitive)}
+          >Aa</button>
+          <button
+            className={`term-search-opt ${searchOpts.wholeWord ? "on" : ""}`}
+            title="Whole word"
+            aria-pressed={searchOpts.wholeWord}
+            onClick={() => setOpt("wholeWord", !searchOpts.wholeWord)}
+          >W</button>
+          <button
+            className={`term-search-opt ${searchOpts.regex ? "on" : ""}`}
+            title="Regular expression"
+            aria-pressed={searchOpts.regex}
+            onClick={() => setOpt("regex", !searchOpts.regex)}
+          >.*</button>
           <button className="btn btn-sm" title="Previous" onClick={() => runSearch(searchQuery, false)}>↑</button>
           <button className="btn btn-sm" title="Next" onClick={() => runSearch(searchQuery, true)}>↓</button>
           <button className="btn btn-sm" title="Close (Esc)" onClick={() => { setSearchOpen(false); setSearchQuery(""); termRef.current?.focus(); }}>✕</button>

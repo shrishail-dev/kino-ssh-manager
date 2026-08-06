@@ -1,5 +1,6 @@
 mod ai;
 mod cloud;
+mod coalesce;
 mod docker;
 mod forwarding;
 mod health;
@@ -716,6 +717,33 @@ fn save_session_log(content: String, path: String) -> Result<(), String> {
     std::fs::write(&path, content).map_err(|e| format!("Cannot write log: {}", e))
 }
 
+/// Record which renderer a terminal obtained, so the answer is visible without
+/// devtools. `console.*` in the webview never reaches this process's stdout, and
+/// release builds have no inspector at all - but "am I on the software DOM
+/// renderer?" is exactly the question a user with a slow terminal needs
+/// answered. Printed once per distinct value, and surfaced in About.
+#[tauri::command]
+fn report_terminal_renderer(renderer: String, detail: Option<String>) {
+    use std::sync::Mutex;
+    static SEEN: Mutex<Option<String>> = Mutex::new(None);
+    let mut seen = match SEEN.lock() {
+        Ok(g) => g,
+        Err(p) => p.into_inner(),
+    };
+    if seen.as_deref() == Some(renderer.as_str()) {
+        return;
+    }
+    match renderer.as_str() {
+        "webgl" => println!("[kino] terminal renderer: webgl (GPU accelerated)"),
+        _ => println!(
+            "[kino] terminal renderer: dom - WebGL unavailable, expect slower \
+redraws on heavy output{}",
+            detail.map(|d| format!(" ({d})")).unwrap_or_default()
+        ),
+    }
+    *seen = Some(renderer);
+}
+
 /// Parse the user's `~/.ssh/config` into importable hosts (no disk writes here).
 #[tauri::command]
 fn import_ssh_config() -> Result<Vec<vault::Host>, String> {
@@ -1417,6 +1445,7 @@ pub fn run() {
             export_ssh_key,
             read_key_file,
             save_session_log,
+            report_terminal_renderer,
             import_host,
             import_ssh_config,
             export_ssh_config,

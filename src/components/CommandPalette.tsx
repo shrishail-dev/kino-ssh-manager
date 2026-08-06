@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useVaultStore } from "../store";
-import { pasteToSession } from "../terminalRegistry";
+import { clearSession, pasteToSession } from "../terminalRegistry";
 import { hostTarget } from "../utils";
 
 interface Props {
@@ -108,6 +108,13 @@ export function CommandPalette({ onClose }: Props) {
         title: "Open local shell",
         group: "Actions",
         run: () => void openLocalShell(),
+      },
+      {
+        id: "action:clear-scrollback",
+        title: "Clear scrollback",
+        subtitle: activeSessionId ? undefined : "No active terminal",
+        group: "Actions",
+        run: () => { if (activeSessionId) clearSession(activeSessionId); },
       },
       {
         id: "action:split",
