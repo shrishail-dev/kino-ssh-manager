@@ -1,7 +1,10 @@
 mod ai;
+mod audit;
 mod cloud;
 mod coalesce;
+mod cron;
 mod docker;
+mod exec;
 mod forwarding;
 mod health;
 mod history;
@@ -722,6 +725,20 @@ fn save_session_log(content: String, path: String) -> Result<(), String> {
 /// release builds have no inspector at all - but "am I on the software DOM
 /// renderer?" is exactly the question a user with a slow terminal needs
 /// answered. Printed once per distinct value, and surfaced in About.
+/// Write a PNG the frontend rendered on a canvas.
+///
+/// The image arrives base64-encoded because the Tauri IPC bridge carries JSON,
+/// and a `Vec<u8>` of a megapixel screenshot serialises as an array of a million
+/// numbers. The fallback path for clipboards that won't take an image.
+#[tauri::command]
+fn save_image_png(data_base64: String, path: String) -> Result<(), String> {
+    use base64::{engine::general_purpose::STANDARD, Engine};
+    let bytes = STANDARD
+        .decode(data_base64.trim())
+        .map_err(|e| format!("Corrupt image data: {}", e))?;
+    std::fs::write(&path, bytes).map_err(|e| format!("Couldn't write the image: {}", e))
+}
+
 #[tauri::command]
 fn report_terminal_renderer(renderer: String, detail: Option<String>) {
     use std::sync::Mutex;
@@ -1445,6 +1462,7 @@ pub fn run() {
             export_ssh_key,
             read_key_file,
             save_session_log,
+            save_image_png,
             report_terminal_renderer,
             import_host,
             import_ssh_config,
@@ -1503,6 +1521,11 @@ pub fn run() {
             metrics::metrics_stop,
             processes::processes_list,
             processes::process_kill,
+            cron::cron_list,
+            cron::cron_save,
+            cron::cron_preview,
+            audit::audit_keys,
+            audit::rotate_key,
             health::check_hosts_health,
             ai::ai_get_config,
             ai::ai_set_config,
@@ -1554,6 +1577,7 @@ mod export_tests {
             proxy_password: None,
             jump_host: None,
             jump: None,
+            key_added_at: None,
         }
     }
 

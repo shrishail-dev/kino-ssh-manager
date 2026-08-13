@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useVaultStore } from "../store";
 import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { ReleaseNote, notesFor, shouldShowNotes } from "../releaseNotes";
+import { WhatsNew } from "./WhatsNew";
 
 const REPO_URL = "https://github.com/Samarthegde/kino-ssh-manager";
 
@@ -21,6 +23,7 @@ export function Unlock() {
   const [branch, setBranch] = useState("main");
   const [token, setToken] = useState("");
   const [version, setVersion] = useState("");
+  const [whatsNew, setWhatsNew] = useState<ReleaseNote | null>(null);
 
   const { unlock, checkVaultExists, syncRestore, updateInfo } = useVaultStore();
 
@@ -31,6 +34,14 @@ export function Unlock() {
   useEffect(() => {
     getVersion().then(setVersion).catch(() => setVersion(""));
   }, []);
+
+  // Both answers are needed before the notes can be judged: which version this
+  // is, and whether a vault already exists - a fresh install is not an upgrade
+  // and gets nothing. `isNew` is null until that check comes back.
+  useEffect(() => {
+    if (!version || isNew === null) return;
+    if (shouldShowNotes(version, !isNew)) setWhatsNew(notesFor(version) ?? null);
+  }, [version, isNew]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -238,6 +249,8 @@ export function Unlock() {
           <span className="unlock-foot-note">End&#8209;to&#8209;end encrypted</span>
         </div>
       </div>
+
+      {whatsNew && <WhatsNew note={whatsNew} onClose={() => setWhatsNew(null)} />}
     </div>
   );
 }

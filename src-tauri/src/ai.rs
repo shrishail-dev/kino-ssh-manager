@@ -83,7 +83,10 @@ impl AiConfig {
     }
 
     fn key(&self) -> String {
-        self.api_keys.get(&self.provider).cloned().unwrap_or_default()
+        self.api_keys
+            .get(&self.provider)
+            .cloned()
+            .unwrap_or_default()
     }
 
     pub fn view(&self) -> AiConfigView {
@@ -173,7 +176,10 @@ pub fn ai_set_config(
     if !config.api_key.is_empty() {
         api_keys.insert(config.provider.clone(), config.api_key);
     }
-    let mut models = existing.as_ref().map(|c| c.models.clone()).unwrap_or_default();
+    let mut models = existing
+        .as_ref()
+        .map(|c| c.models.clone())
+        .unwrap_or_default();
     if let Some(m) = config.model.filter(|m| !m.is_empty()) {
         models.insert(config.provider.clone(), m);
     }
@@ -274,8 +280,8 @@ pub async fn ai_send(
     messages: Vec<AiMessage>,
 ) -> Result<(), String> {
     let key = { *state.vault_key.lock().unwrap() }.ok_or("Vault is locked")?;
-    let config = load_config(&key)
-        .ok_or("The AI copilot isn't set up yet - add a key under Settings.")?;
+    let config =
+        load_config(&key).ok_or("The AI copilot isn't set up yet - add a key under Settings.")?;
 
     // Resolve credentials before spawning so auth errors surface immediately.
     let auth = resolve_auth(&config)?;
@@ -366,7 +372,9 @@ pub async fn ai_send(
 /// Ask OpenRouter which models exist, so the UI never depends on a hardcoded
 /// list that has gone stale.
 #[tauri::command]
-pub async fn ai_list_models(state: tauri::State<'_, crate::AppState>) -> Result<Vec<AiModel>, String> {
+pub async fn ai_list_models(
+    state: tauri::State<'_, crate::AppState>,
+) -> Result<Vec<AiModel>, String> {
     let key = { *state.vault_key.lock().unwrap() }.ok_or("Vault is locked")?;
     let config = load_config(&key).ok_or("The AI copilot isn't set up yet.")?;
     let auth = resolve_auth(&config)?;
@@ -379,7 +387,10 @@ pub async fn ai_list_models(state: tauri::State<'_, crate::AppState>) -> Result<
         let resp = match req.call() {
             Ok(r) => r,
             Err(ureq::Error::Status(code, r)) => {
-                return Err(friendly_http_error(code, &r.into_string().unwrap_or_default()))
+                return Err(friendly_http_error(
+                    code,
+                    &r.into_string().unwrap_or_default(),
+                ))
             }
             Err(e) => return Err(format!("Could not reach the API: {e}")),
         };
@@ -467,7 +478,8 @@ mod tests {
     fn model_falls_back_to_the_default() {
         assert_eq!(cfg("k").model(), DEFAULT_MODEL);
         let mut c = cfg("k");
-        c.models.insert(PROVIDER_OPENROUTER.into(), "openai/gpt-4o".into());
+        c.models
+            .insert(PROVIDER_OPENROUTER.into(), "openai/gpt-4o".into());
         assert_eq!(c.model(), "openai/gpt-4o");
     }
 
@@ -489,7 +501,10 @@ mod tests {
         let body = build_body(
             &cfg("k"),
             "sys",
-            &[AiMessage { role: "user".into(), content: "hi".into() }],
+            &[AiMessage {
+                role: "user".into(),
+                content: "hi".into(),
+            }],
         );
         assert_eq!(body["messages"][0]["role"], "system");
         assert_eq!(body["messages"][0]["content"], "sys");
@@ -502,7 +517,14 @@ mod tests {
     fn body_omits_reasoning_for_non_effort_values() {
         let mut c = cfg("k");
         c.effort = "xhigh".into();
-        let body = build_body(&c, "", &[AiMessage { role: "user".into(), content: "hi".into() }]);
+        let body = build_body(
+            &c,
+            "",
+            &[AiMessage {
+                role: "user".into(),
+                content: "hi".into(),
+            }],
+        );
         assert!(body.get("reasoning").is_none());
         // No system message means no leading system entry.
         assert_eq!(body["messages"][0]["role"], "user");

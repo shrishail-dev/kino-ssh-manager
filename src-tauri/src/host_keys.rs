@@ -183,6 +183,7 @@ mod tests {
             proxy_password: None,
             jump_host: None,
             jump: None,
+            key_added_at: None,
         }
     }
 

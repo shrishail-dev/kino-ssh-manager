@@ -73,9 +73,11 @@ pub fn deactivate() {
 }
 
 pub fn active() -> Option<CloudConfig> {
-    ACTIVE.read().unwrap().clone().filter(|c| {
-        !c.control_url.is_empty() && !c.account_key.is_empty()
-    })
+    ACTIVE
+        .read()
+        .unwrap()
+        .clone()
+        .filter(|c| !c.control_url.is_empty() && !c.account_key.is_empty())
 }
 
 fn now() -> u64 {
@@ -90,7 +92,10 @@ fn get_json(config: &CloudConfig, path: &str) -> Result<serde_json::Value, Strin
 }
 
 fn post_json(config: &CloudConfig, path: &str) -> Result<serde_json::Value, String> {
-    call_json(ureq::post(&url(config, path)).set("Content-Length", "0"), config)
+    call_json(
+        ureq::post(&url(config, path)).set("Content-Length", "0"),
+        config,
+    )
 }
 
 fn url(config: &CloudConfig, path: &str) -> String {
@@ -112,16 +117,17 @@ fn call_json(req: ureq::Request, config: &CloudConfig) -> Result<serde_json::Val
             ),
             other => format!("Cannot reach Kino Cloud: {other}"),
         })?;
-    response.into_json().map_err(|e| format!("Bad response from Kino Cloud: {e}"))
+    response
+        .into_json()
+        .map_err(|e| format!("Bad response from Kino Cloud: {e}"))
 }
 
 /// One-call connect: fresh short-lived manager JWT + where the agent is
 /// parked. Falls back to the last successful answer (if its JWT is still
 /// alive) when kino-control is unreachable.
 pub fn connect_info(agent_id: &str) -> Result<(String, String), String> {
-    let config = active().ok_or(
-        "This host uses Kino Cloud, but no account key is configured - see Settings",
-    )?;
+    let config = active()
+        .ok_or("This host uses Kino Cloud, but no account key is configured - see Settings")?;
     match post_json(&config, &format!("/api/machines/{agent_id}/connect")) {
         Ok(body) => {
             let token = body["token"]
@@ -248,7 +254,10 @@ pub fn cloud_add_machine(name: String) -> Result<AddedMachine, String> {
     Ok(AddedMachine {
         agent_id: body["agent_id"].as_str().unwrap_or_default().to_string(),
         name: body["name"].as_str().unwrap_or_default().to_string(),
-        install_command: body["install_command"].as_str().unwrap_or_default().to_string(),
+        install_command: body["install_command"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string(),
     })
 }
 

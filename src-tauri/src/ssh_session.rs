@@ -144,14 +144,17 @@ pub async fn connect_to_host(host: &Host) -> Result<NetStream, String> {
                     .map_err(|e| format!("Cloud connect task failed: {}", e))??;
             let ws_url = format!("{}/ws/manager/request?agent_id={}", relay_url, agent_id);
             let mut request =
-                tokio_tungstenite::tungstenite::client::IntoClientRequest::into_client_request(&ws_url)
-                    .map_err(|e| format!("Invalid relay URL: {}", e))?;
+                tokio_tungstenite::tungstenite::client::IntoClientRequest::into_client_request(
+                    &ws_url,
+                )
+                .map_err(|e| format!("Invalid relay URL: {}", e))?;
             let value = format!("Bearer {}", token)
                 .parse()
                 .map_err(|e| format!("Invalid connection token: {}", e))?;
-            request
-                .headers_mut()
-                .insert(tokio_tungstenite::tungstenite::http::header::AUTHORIZATION, value);
+            request.headers_mut().insert(
+                tokio_tungstenite::tungstenite::http::header::AUTHORIZATION,
+                value,
+            );
             let (ws_stream, _) = tokio_tungstenite::connect_async(request)
                 .await
                 .map_err(|e| format!("Failed to connect to relay: {}", e))?;
@@ -200,15 +203,17 @@ pub async fn connect_to_host(host: &Host) -> Result<NetStream, String> {
         let ws_url = format!("{}/ws/manager/request?agent_id={}", relay_url, agent_id);
         // Token travels as a header, not a query parameter, so it stays out of
         // relay/proxy access logs.
-        let mut request = tokio_tungstenite::tungstenite::client::IntoClientRequest::into_client_request(&ws_url)
-            .map_err(|e| format!("Invalid relay URL: {}", e))?;
+        let mut request =
+            tokio_tungstenite::tungstenite::client::IntoClientRequest::into_client_request(&ws_url)
+                .map_err(|e| format!("Invalid relay URL: {}", e))?;
         if let Some(token) = host.relay_token.as_deref().filter(|t| !t.is_empty()) {
             let value = format!("Bearer {}", token)
                 .parse()
                 .map_err(|e| format!("Invalid relay token: {}", e))?;
-            request
-                .headers_mut()
-                .insert(tokio_tungstenite::tungstenite::http::header::AUTHORIZATION, value);
+            request.headers_mut().insert(
+                tokio_tungstenite::tungstenite::http::header::AUTHORIZATION,
+                value,
+            );
         }
         let (ws_stream, _) = tokio_tungstenite::connect_async(request)
             .await
@@ -278,9 +283,7 @@ pub(crate) async fn open_target_stream(host: &Host) -> Result<tokio::net::TcpStr
     let proxy_host = host.proxy_host.as_deref().map(str::trim).unwrap_or("");
     match ptype {
         Some(kind) if !proxy_host.is_empty() => {
-            let proxy_port = host
-                .proxy_port
-                .ok_or("Proxy port not set for this host")?;
+            let proxy_port = host.proxy_port.ok_or("Proxy port not set for this host")?;
             let user = host.proxy_username.as_deref().filter(|s| !s.is_empty());
             let pass = host.proxy_password.as_deref().filter(|s| !s.is_empty());
             match kind {
@@ -311,7 +314,12 @@ pub(crate) async fn open_target_stream(host: &Host) -> Result<tokio::net::TcpStr
         }
         _ => tokio::net::TcpStream::connect((host.hostname.as_str(), host.port))
             .await
-            .map_err(|e| format!("Failed to connect to {}:{}: {}", host.hostname, host.port, e)),
+            .map_err(|e| {
+                format!(
+                    "Failed to connect to {}:{}: {}",
+                    host.hostname, host.port, e
+                )
+            }),
     }
 }
 
@@ -476,7 +484,10 @@ async fn http_connect(
     let status_line = head.lines().next().unwrap_or("");
     let code = status_line.split_whitespace().nth(1).unwrap_or("");
     if code != "200" {
-        return Err(format!("HTTP proxy refused CONNECT: {}", status_line.trim()));
+        return Err(format!(
+            "HTTP proxy refused CONNECT: {}",
+            status_line.trim()
+        ));
     }
     Ok(s)
 }
@@ -881,10 +892,8 @@ fn spawn_relay(
 
         // Batch output on its way to the webview; see crate::coalesce for why.
         // Event names are built once - they were being reformatted per packet.
-        let mut batcher = crate::coalesce::Coalescer::new(
-            crate::coalesce::WINDOW,
-            crate::coalesce::MAX_BATCH,
-        );
+        let mut batcher =
+            crate::coalesce::Coalescer::new(crate::coalesce::WINDOW, crate::coalesce::MAX_BATCH);
         let data_event = format!("ssh-data-{}", session_id);
         let closed_event = format!("ssh-closed-{}", session_id);
 

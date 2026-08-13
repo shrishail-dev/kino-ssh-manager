@@ -3,6 +3,7 @@ import { Host, HostKeyVerdict, useVaultStore } from "../store";
 import { ConnectDialog, getSavedAuthPref } from "./ConnectDialog";
 import { ExportMenu, pickProfileFile } from "./ExportMenu";
 import { HostForm } from "./HostForm";
+import { NewMenu } from "./NewMenu";
 import { HostKeyDialog } from "./HostKeyDialog";
 import { ImportPasswordModal } from "./ImportPasswordModal";
 import { ContextMenu, MenuItem } from "./ContextMenu";
@@ -442,30 +443,14 @@ export function Sidebar({ width }: { width: number }) {
         </div>
 
         <div className="sidebar-footer">
-          <button
-            className="btn btn-primary add-btn"
-            onClick={() => { setEditHost(undefined); setShowForm(true); }}
-          >
-            Add Host
-          </button>
-          <button
-            className="btn import-btn"
-            onClick={openLocalShell}
-            title="Open a local terminal tab"
-          >
-            Shell
-          </button>
-          <button className="btn import-btn" onClick={handleImport} disabled={importing}>
-            {importing ? "Importing…" : "Import"}
-          </button>
-          <button
-            className="btn import-btn"
-            onClick={handleImportSshConfig}
-            disabled={importingConfig}
-            title="Import hosts from your ~/.ssh/config"
-          >
-            {importingConfig ? "Importing…" : "SSH config"}
-          </button>
+          <NewMenu
+            onAddHost={() => { setEditHost(undefined); setShowForm(true); }}
+            onLocalShell={openLocalShell}
+            onImportProfile={handleImport}
+            onImportSshConfig={handleImportSshConfig}
+            importingProfile={importing}
+            importingSshConfig={importingConfig}
+          />
         </div>
       </aside>
 

@@ -107,10 +107,8 @@ pub fn connect_command(
         use std::sync::mpsc::RecvTimeoutError;
         let data_event = format!("local-data-{}", sid_read);
         let closed_event = format!("local-closed-{}", sid_read);
-        let mut batcher = crate::coalesce::Coalescer::new(
-            crate::coalesce::WINDOW,
-            crate::coalesce::MAX_BATCH,
-        );
+        let mut batcher =
+            crate::coalesce::Coalescer::new(crate::coalesce::WINDOW, crate::coalesce::MAX_BATCH);
 
         loop {
             // While a burst is in flight, wake at the deadline; when idle, just

@@ -57,6 +57,8 @@ export interface Host {
   jump_host?: string | null;
   /** Resolved jump host, attached only at connect time (never persisted). */
   jump?: Host | null;
+  /** Unix seconds when this key was generated or last rotated; null if unknown. */
+  key_added_at?: number | null;
 }
 
 export interface Snippet {
@@ -145,6 +147,87 @@ export interface ProcessInfo {
 }
 
 export type KillSignal = "TERM" | "KILL" | "HUP" | "INT";
+
+export interface CronJob {
+  /** Index into `CronTable.lines`; edits target this one line. */
+  line: number;
+  /** Five fields, or an `@nickname`. */
+  schedule: string;
+  command: string;
+  /** False when the line is commented out - the usual way to park a job. */
+  enabled: boolean;
+  /** The `#` comment block above the job, if any. */
+  comment: string | null;
+  /** Plain English, e.g. "Every Tuesday at 04:00". */
+  description: string;
+  /** Unix seconds of the next few runs; empty for @reboot. */
+  next_runs: number[];
+}
+
+export interface CronTable {
+  /** Every line of the crontab, verbatim. Edits rewrite lines, never the file. */
+  lines: string[];
+  jobs: CronJob[];
+  /** `NAME=value` lines, shown read-only for context. */
+  env: string[];
+  /** Compare-and-swap token; hand it back to `cronSave`. */
+  token: string;
+  /** The host's clock when this was read, in Unix seconds. */
+  host_now: number;
+  /** The host's UTC offset in minutes - cron fires on host local time. */
+  host_offset_min: number;
+  /** True when the user has no crontab yet. */
+  empty: boolean;
+}
+
+export interface CronPreview {
+  valid: boolean;
+  description: string;
+  next_runs: number[];
+}
+
+export interface AuditFinding {
+  /** Stable id: "weak-rsa", "reused-key", "stale-key", … */
+  id: string;
+  severity: "high" | "medium" | "low";
+  title: string;
+  detail: string;
+}
+
+export interface KeyFacts {
+  algorithm: string;
+  /** Only meaningful for RSA/DSA. */
+  bits: number | null;
+  fingerprint: string;
+  encrypted: boolean;
+}
+
+export interface HostAudit {
+  host_id: string;
+  host_name: string;
+  auth: string;
+  /** Null when the host has no key, or one that couldn't be read. */
+  key: KeyFacts | null;
+  key_added_at: number | null;
+  /** Names of the other hosts sharing this key. */
+  shared_with: string[];
+  findings: AuditFinding[];
+}
+
+export interface AuditReport {
+  hosts: HostAudit[];
+  generated_at: number;
+  high: number;
+  medium: number;
+  low: number;
+}
+
+export interface RotateOutcome {
+  fingerprint: string;
+  /** False when the old key couldn't be identified or removed. */
+  old_key_removed: boolean;
+  note: string | null;
+}
 
 export type AiProvider = "openrouter";
 
@@ -352,6 +435,31 @@ interface VaultStore {
   installPublicKey: (host: Host, publicKey: string) => Promise<void>;
   processesList: (sessionId: string, local: boolean) => Promise<ProcessInfo[]>;
   processKill: (sessionId: string, local: boolean, pid: number, signal: KillSignal) => Promise<void>;
+  cronList: (sessionId: string, local: boolean) => Promise<CronTable>;
+  /**
+   * Write the crontab back. `lines` is the whole file and `token` is the one
+   * from the `CronTable` this edit started from - the backend refuses the write
+   * if the crontab changed on the host in the meantime.
+   */
+  cronSave: (
+    sessionId: string,
+    local: boolean,
+    lines: string[],
+    token: string
+  ) => Promise<CronTable>;
+  /** Describe a schedule without touching the host; drives the live editor preview. */
+  cronPreview: (
+    schedule: string,
+    hostNow: number,
+    hostOffsetMin: number
+  ) => Promise<CronPreview>;
+  /** Inspect every stored key. Entirely local - no host is contacted. */
+  auditKeys: () => Promise<AuditReport>;
+  /**
+   * Replace a host's key with a fresh ed25519 one. Progress arrives on
+   * `rotate-<hostId>` as plain strings; see SecurityPanel.
+   */
+  rotateKey: (hostId: string) => Promise<RotateOutcome>;
   aiGetConfig: () => Promise<AiConfigView | null>;
   cloudGetConfig: () => Promise<CloudConfigView | null>;
   cloudSetConfig: (config: CloudConfigInput) => Promise<CloudConfigView>;
@@ -557,9 +665,20 @@ export function terminalFontStack(family: string): string {
 /** Lines of scrollback per terminal. xterm's own default is 1000; 5000 was
  *  hardcoded here before this became a setting, so it stays the default. */
 export const DEFAULT_SCROLLBACK = 5000;
+/** Smallest scrollback we will honour. Zero is deliberately not allowed: with
+ *  no scrollback xterm reports `hasScrollback === false` and turns wheel events
+ *  into cursor-key escapes instead of scrolling, so scrolling up cycles the
+ *  shell's command history rather than showing earlier output. */
+const MIN_SCROLLBACK = 100;
+
 function initialScrollback(): number {
-  const n = Number(localStorage.getItem(SCROLLBACK_KEY));
-  return Number.isFinite(n) && n >= 0 ? n : DEFAULT_SCROLLBACK;
+  const raw = localStorage.getItem(SCROLLBACK_KEY);
+  // `Number(null)` is 0, not NaN - so an unset key has to be caught here rather
+  // than by the numeric check below, or every install that never opened the
+  // setting silently gets zero scrollback.
+  if (raw === null || raw.trim() === "") return DEFAULT_SCROLLBACK;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= MIN_SCROLLBACK ? n : DEFAULT_SCROLLBACK;
 }
 
 function initialHealthInterval(): number {
@@ -736,7 +855,7 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
   },
 
   setScrollbackLines: (lines) => {
-    const n = Math.max(0, Math.min(200_000, Math.floor(lines) || 0));
+    const n = Math.max(MIN_SCROLLBACK, Math.min(200_000, Math.floor(lines) || DEFAULT_SCROLLBACK));
     localStorage.setItem(SCROLLBACK_KEY, String(n));
     set({ scrollbackLines: n });
     // Apply to terminals that are already open, so the change is visible
@@ -1394,6 +1513,21 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
     invoke<ProcessInfo[]>("processes_list", { sessionId, local }),
   processKill: (sessionId, local, pid, signal) =>
     invoke<void>("process_kill", { sessionId, local, pid, signal }),
+
+  cronList: (sessionId, local) => invoke<CronTable>("cron_list", { sessionId, local }),
+  cronSave: (sessionId, local, lines, token) =>
+    invoke<CronTable>("cron_save", { sessionId, local, lines, token }),
+  cronPreview: (schedule, hostNow, hostOffsetMin) =>
+    invoke<CronPreview>("cron_preview", { schedule, hostNow, hostOffsetMin }),
+
+  auditKeys: () => invoke<AuditReport>("audit_keys"),
+  rotateKey: async (hostId) => {
+    const outcome = await invoke<RotateOutcome>("rotate_key", { hostId });
+    // Rotation rewrites the host in the vault, so the copy in the store - the
+    // one the host form and every connect path reads - is now the old key.
+    set({ hosts: await invoke<Host[]>("get_hosts") });
+    return outcome;
+  },
 
   aiGetConfig: () => invoke<AiConfigView | null>("ai_get_config"),
   cloudGetConfig: () => invoke<CloudConfigView | null>("cloud_get_config"),

@@ -9,6 +9,7 @@ import { SftpModal } from "./components/SftpModal";
 import { DockerPanel } from "./components/DockerPanel";
 import { MetricsPanel } from "./components/MetricsPanel";
 import { ProcessesPanel } from "./components/ProcessesPanel";
+import { CronPanel } from "./components/CronPanel";
 import { CopilotPanel } from "./components/CopilotPanel";
 import { HomePanel } from "./components/HomePanel";
 import { AiSettingsModal } from "./components/AiSettingsModal";
@@ -16,6 +17,7 @@ import { SettingsMenu } from "./components/SettingsMenu";
 import { Unlock } from "./components/Unlock";
 import { ContextMenu, MenuItem } from "./components/ContextMenu";
 import { CommandPalette } from "./components/CommandPalette";
+import { ToolsMenu } from "./components/ToolsMenu";
 import "./index.css";
 
 const SIDEBAR_MIN = 190;
@@ -41,10 +43,6 @@ function App() {
     theme,
     idleLockMinutes,
     checkForUpdate,
-    recordingSessions,
-    startRecording,
-    stopRecording,
-    setRecordingState,
     broadcastInput,
     setBroadcastInput,
     copilotEnabled,
@@ -60,6 +58,7 @@ function App() {
   const [dockerTabId, setDockerTabId] = useState<string | null>(null);
   const [metricsTabId, setMetricsTabId] = useState<string | null>(null);
   const [procTabId, setProcTabId] = useState<string | null>(null);
+  const [cronTabId, setCronTabId] = useState<string | null>(null);
   const [copilotTabId, setCopilotTabId] = useState<string | null>(null);
   // Text handed to the Copilot to explain (from a terminal selection); one-shot.
   const [copilotSeed, setCopilotSeed] = useState<string | null>(null);
@@ -196,6 +195,7 @@ function App() {
   const dockerTab = tabs.find((t) => t.id === dockerTabId);
   const metricsTab = tabs.find((t) => t.id === metricsTabId);
   const procTab = tabs.find((t) => t.id === procTabId);
+  const cronTab = tabs.find((t) => t.id === cronTabId);
   const copilotTab = tabs.find((t) => t.id === copilotTabId);
 
   return (
@@ -304,114 +304,20 @@ function App() {
                     </div>
                     
                     <div className="tab-bar-tools">
-                      {activeTab && activeTab.connected && activeTab.kind === "ssh" && (
-                        <button
-                          className="fwd-trigger"
-                          onClick={() => setSftpTabId(activeTab.id)}
-                          title="Browse files (SFTP)"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                          </svg>
-                          Files
-                        </button>
-                      )}
                       {activeTab && activeTab.connected && (
-                        <button
-                          className="fwd-trigger"
-                          onClick={() => setDockerTabId(activeTab.id)}
-                          title="Manage Docker containers"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <rect x="3" y="9" width="4" height="4" />
-                            <rect x="9" y="9" width="4" height="4" />
-                            <rect x="15" y="9" width="4" height="4" />
-                            <rect x="9" y="4" width="4" height="4" />
-                            <path d="M2 13c0 4 3 6 8 6 6 0 10-3 11-8 1 0 2-1 2-2-1-1-3-1-4 0" />
-                          </svg>
-                          Docker
-                        </button>
+                        <ToolsMenu
+                          tab={activeTab}
+                          onOpenSftp={() => setSftpTabId(activeTab.id)}
+                          onOpenDocker={() => setDockerTabId(activeTab.id)}
+                          onOpenMetrics={() => setMetricsTabId(activeTab.id)}
+                          onOpenCopilot={() => setCopilotTabId(activeTab.id)}
+                          onOpenProcesses={() => setProcTabId(activeTab.id)}
+                          onOpenCron={() => setCronTabId(activeTab.id)}
+                        />
                       )}
-                      {activeTab && activeTab.connected && (
-                        <button
-                          className="fwd-trigger"
-                          onClick={() => setMetricsTabId(activeTab.id)}
-                          title="Live system metrics"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M3 3v18h18" />
-                            <polyline points="7 13 11 9 14 12 19 6" />
-                          </svg>
-                          Metrics
-                        </button>
-                      )}
-                      {copilotEnabled && activeTab && activeTab.connected && (
-                        <button
-                          className="fwd-trigger"
-                          onClick={() => setCopilotTabId(activeTab.id)}
-                          title="Ask the AI copilot about this host"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M12 3l1.9 4.6 4.6 1.9-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z" />
-                            <path d="M18 15l.8 2.2 2.2.8-2.2.8L18 21l-.8-2.2-2.2-.8 2.2-.8z" />
-                          </svg>
-                          Copilot
-                        </button>
-                      )}
-                      {activeTab && activeTab.connected && (
-                        <button
-                          className="fwd-trigger"
-                          onClick={() => setProcTabId(activeTab.id)}
-                          title="View and signal processes"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <rect x="4" y="4" width="16" height="16" rx="2" />
-                            <rect x="9" y="9" width="6" height="6" />
-                            <path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2" />
-                          </svg>
-                          Processes
-                        </button>
-                      )}
+
                       {activeTab?.kind === "ssh" && activeTab.host && (
                         <ForwardingPanel sessionId={activeTab.sessionId} host={activeTab.host} />
-                      )}
-                      
-                      {activeTab && activeTab.connected && (
-                        <button
-                          className={`fwd-trigger ${recordingSessions.has(activeTab.sessionId) ? "active" : ""}`}
-                          onClick={async () => {
-                            const isRecording = recordingSessions.has(activeTab.sessionId);
-                            if (isRecording) {
-                              await stopRecording(activeTab.sessionId);
-                              setRecordingState(activeTab.sessionId, false);
-                            } else {
-                              const hostName = activeTab.host?.name ?? "local";
-                              const timeStr = new Date().toISOString().replace(/[:.]/g, "-");
-                              const filename = `${hostName}-${timeStr}.cast`;
-                              try {
-                                await startRecording(activeTab.sessionId, filename);
-                                setRecordingState(activeTab.sessionId, true);
-                              } catch (e) {
-                                alert(`Failed to start recording: ${e}`);
-                              }
-                            }
-                          }}
-                          title={recordingSessions.has(activeTab.sessionId) ? "Stop recording" : "Record session (Asciinema)"}
-                        >
-                          {recordingSessions.has(activeTab.sessionId) ? (
-                            <span style={{ color: "var(--red)", display: "flex", alignItems: "center", gap: 4 }}>
-                              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--red)", boxShadow: "0 0 4px var(--red)" }}></span>
-                              Recording
-                            </span>
-                          ) : (
-                            <>
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <circle cx="12" cy="12" r="6" />
-                              </svg>
-                              Record
-                            </>
-                          )}
-                        </button>
                       )}
                       
                       {panes.length > 1 && (
@@ -533,6 +439,16 @@ function App() {
           local={procTab.kind === "local"}
           title={procTab.title ?? (procTab.kind === "local" ? "Local Shell" : procTab.host?.name ?? "Host")}
           onClose={() => setProcTabId(null)}
+        />
+      )}
+
+      {cronTab && (
+        <CronPanel
+          key={cronTab.id}
+          sessionId={cronTab.sessionId}
+          local={cronTab.kind === "local"}
+          title={cronTab.title ?? (cronTab.kind === "local" ? "Local Shell" : cronTab.host?.name ?? "Host")}
+          onClose={() => setCronTabId(null)}
         />
       )}
 

@@ -4,9 +4,106 @@ All notable changes to Kino SSH Manager are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.8.0] - 2026-08-13
+
+### Added
+- **Release notes on first launch after an upgrade.** Upgrading used to be
+  silent: the app you opened was simply different from the one you closed. The
+  unlock screen now shows what changed, once, and never again for that version.
+  A fresh install doesn't see it - nothing is "new" to someone who has never run
+  an older build.
+- **Copy a selection as an image.** Select terminal output and the tooltip now
+  offers **Image** alongside Copy: a PNG of exactly what was on screen, colours
+  and all, ready to paste into Slack or an issue.
+
+  It is not a screenshot and not a picture of plain text. `getSelection()` hands
+  back characters with every attribute stripped, so this walks the buffer cells
+  instead and keeps what was actually rendered - 16-colour and 256-colour
+  palettes, 24-bit colour, bold, dim, italic, underline, strikethrough and
+  inverse - resolved against the theme and font you're using. Trailing blank
+  space is trimmed, so the image is as wide as the output rather than as wide as
+  the terminal. Each capture is captioned with the host and the local time.
+
+  Where the clipboard refuses images - WebKitGTK on Linux, mainly - Kino opens a
+  save dialog instead of failing, since the picture is already made by then.
+
+- **A key audit, and one-click rotation.** Kino has always stored keys without
+  ever having an opinion about them. **Settings → Vault → Key audit** now reads
+  every key in the vault and reports what it finds: undersized RSA and DSA keys,
+  keys shared across several hosts, keys over a year old, hosts still on a
+  password, and keys that no longer parse at all. It runs entirely on this
+  machine - no host is contacted to produce the report.
+
+  **Rotate key** generates a fresh ed25519 pair, installs it, and only then
+  retires the old one. The order is the point: the new key is proved by opening a
+  second connection that can *only* authenticate with it, and the old key is
+  removed after that succeeds - never before. Any failure earlier in the sequence
+  leaves the host exactly as it was, and the removal step refuses to rewrite
+  `authorized_keys` at all unless the new key is present in the result. Other
+  operators' keys, comments and `command=` options in that file are left alone.
+
+  Two limits worth stating. Keys carry no creation date of their own, so the age
+  of a key that predates this release reads as "unknown" rather than a guess;
+  rotating starts the clock. And hosts that authenticate through your ssh-agent
+  have no key in the vault to rotate, so they're listed but the button is off.
+
+- **A cron editor.** `crontab -e` drops you into vi with a comment block for a
+  manual page, and a mistyped field is a job that silently never runs. **Tools →
+  Cron jobs** reads the crontab on the connected host (or the local machine),
+  and shows each job with its schedule written out - "At 04:00 every day",
+  "Every 15 minutes", "At 05:00 on Monday" - and the next three times it will
+  actually fire, in the host's clock rather than yours. Jobs can be added,
+  edited, paused (commented out, the way people do it by hand) and removed.
+  Editing a schedule shows what it means as you type.
+
+  The panel never regenerates a crontab; it rewrites individual lines of the one
+  that is there. Comments, `PATH=` and `MAILTO=`, blank lines, unusual spacing
+  and anything it doesn't recognise survive a save byte for byte, and the **Raw**
+  tab edits the file directly when that's what you want. Saving is a
+  compare-and-swap: if the crontab changed on the host since the panel loaded
+  it, the write is refused rather than quietly overwriting a `crontab -e` you
+  left open in another window.
+
+  Cron's day-of-month/day-of-week rule is honoured, including the one that
+  catches everybody - when both fields are set, the job runs if **either**
+  matches, and the description says so out loud.
+
 ## [0.7.1] - 2026-08-06
 
 ### Added
+- **The new menus were unreadable on light themes.** The Tools menu, the
+  sidebar's New menu and the themed select were added after the light-theme
+  corrections were written, so they never joined them: their offset shadow is
+  mixed from the page background, which on a light theme is white and therefore
+  invisible, and their panels were slightly translucent. The result was a
+  near-white panel on a near-white page with no edge and no shadow - a washed
+  out ghost with the list behind showing through. They are opaque now, carry a
+  visible shadow on light themes, and their second lines were lifted out of the
+  grey they were disappearing into.
+- **Dropdowns follow the theme.** A native `<select>` can be styled shut but
+  not open: on Linux the popup list is drawn by GTK, which ignores the page's
+  stylesheet entirely - so picking a theme or a font opened a list in the
+  system's colours and system font in the middle of a dark, custom-typeset app.
+  The selects in **Settings** are now the app's own, using the same ink and type
+  as everything else, scrollable and keyboard-navigable. Being ours, they can
+  also **draw each font option in the face it names**, which is what makes a
+  font picker a picker rather than a list of words.
+- **A New menu in the sidebar.** Add host, local shell, import profile and
+  import SSH config were four buttons wrapping onto two rows in a narrow
+  sidebar, three of them reading "Import"-something and hard to tell apart.
+  They are now one **New** button, and each option gets a line saying what it
+  does ("A shared .sshm file", "Hosts from ~/.ssh/config"). Adding a host is one
+  click deeper than before; it remains a single step from the command palette.
+- **A Tools menu.** Files, Docker, Metrics, Copilot, Processes and session
+  recording now sit behind one **Tools** button in the tab bar instead of six
+  separate ones. Those buttons appeared and disappeared depending on the
+  session, so the strip's width shifted as you moved between tabs; one menu
+  holds it steady and leaves room for real labels. A tool that can't run in the
+  current session stays listed but disabled with the reason beside it - Files
+  reads "SSH sessions only" on a local shell - rather than silently not being
+  there. Recording shows a mark on the Tools button itself, since that state
+  outlives the menu being open. Tunnels keeps its own button, because it opens
+  a panel rather than a window.
 - **Reduced motion & effects** - one switch under **Settings - Appearance** that
   makes the interface still and cheap to draw. It stops every animation,
   including the fifteen that otherwise never end (the perforation rail, the
@@ -78,6 +175,14 @@ on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
   in a saved log.
 
 ### Fixed
+- **Scrolling up showed command history instead of earlier output.** Making
+  scrollback configurable introduced a defaulting bug: `Number(null)` is `0`
+  rather than `NaN`, so an install that had never opened the setting read its
+  stored value as zero and ran with **no scrollback at all**. With no scrollback
+  xterm reports `hasScrollback === false` and converts wheel events into cursor
+  keys instead of scrolling, which the shell answers with its command history.
+  An unset value now falls back to the 5,000-line default, and zero can no
+  longer be stored.
 - **Overlays no longer render behind the terminal.** The Tunnels dropdown, the
   toast and the command palette were all being painted underneath it. The film
   grain introduced in 0.7.0 sits above the app chrome, and the terminal was

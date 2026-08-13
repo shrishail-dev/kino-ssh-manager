@@ -16,6 +16,7 @@ import { THEMES } from "../themes";
 import { appendTerminalOutput, clearTerminalOutput, getTerminalOutput, RollingText } from "../terminalBuffer";
 import { registerClearHandler, registerTerminal, unregisterTerminal } from "../terminalRegistry";
 import { highlightChunk } from "../highlight";
+import { blobToBase64, captureSelection } from "../terminalImage";
 
 interface Props {
   sessionId: string;
@@ -499,6 +500,61 @@ export function Terminal({ sessionId, kind, active, tabId, host, onExplain }: Pr
     setSelMenu(null);
   }
 
+  /**
+   * Copy the selection as a PNG, keeping its colours and attributes.
+   *
+   * The clipboard is tried first because that's the whole point - straight into
+   * a chat window. Image writes aren't universally supported (WebKitGTK is the
+   * one that matters here), and when they aren't, the fallback is a save dialog
+   * rather than an error: the picture has already been rendered by then, and
+   * throwing it away because one API is missing would be silly.
+   */
+  async function copySelectionAsImage() {
+    const term = termRef.current;
+    if (!term || !selMenu) return;
+    setSelMenu(null);
+    const state = useVaultStore.getState();
+    const theme = THEMES.find((t) => t.id === state.theme) ?? THEMES[0];
+
+    let blob: Blob | null;
+    try {
+      blob = await captureSelection({
+        term,
+        theme: { ...theme.term, background: state.terminalBackground || theme.term.background },
+        fontFamily: terminalFontStack(state.terminalFont),
+        title: host?.name ?? (kind === "local" ? "Local Shell" : "Session"),
+        accent: theme.ui.blue,
+      });
+    } catch (e) {
+      toast(`Couldn't render the image: ${e}`);
+      return;
+    }
+    if (!blob) {
+      toast("Nothing selected to capture");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      toast("Copied image to clipboard");
+      term.clearSelection();
+      return;
+    } catch {
+      // Falls through to the save dialog below.
+    }
+
+    try {
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+      const path = await saveDialog({ defaultPath: `kino-${stamp}.png` });
+      if (!path) return;
+      await invoke("save_image_png", { dataBase64: await blobToBase64(blob), path });
+      toast("This clipboard won't take images - saved the PNG instead");
+      term.clearSelection();
+    } catch (e) {
+      toast(`Couldn't save the image: ${e}`);
+    }
+  }
+
   return (
     <div ref={wrapRef} className="terminal-wrap" style={{ display: active ? "block" : "none" }}>
       {selMenu && (
@@ -513,6 +569,18 @@ export function Terminal({ sessionId, kind, active, tabId, host, onExplain }: Pr
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
             </svg>
             Copy
+          </button>
+          <button
+            className="term-sel-btn"
+            onClick={() => void copySelectionAsImage()}
+            title="Copy the selection as a PNG, colours and all"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="4" width="18" height="16" rx="2" />
+              <circle cx="8.5" cy="9.5" r="1.5" />
+              <path d="M21 16l-5-5-4 4-2-2-7 7" />
+            </svg>
+            Image
           </button>
           {onExplain && (
             <button className="term-sel-btn" onClick={explainSelection}>

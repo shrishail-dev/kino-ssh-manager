@@ -40,7 +40,12 @@ pub struct Coalescer {
 
 impl Coalescer {
     pub fn new(window: Duration, max: usize) -> Self {
-        Self { pending: Vec::new(), deadline: None, window, max }
+        Self {
+            pending: Vec::new(),
+            deadline: None,
+            window,
+            max,
+        }
     }
 
     /// When the caller should next call [`Coalescer::on_deadline`], or `None`
@@ -179,7 +184,9 @@ mod tests {
         if let Some(out) = c.take() {
             seen.extend_from_slice(&out);
         }
-        let expected: Vec<u8> = (0..500u32).flat_map(|i| format!("{i},").into_bytes()).collect();
+        let expected: Vec<u8> = (0..500u32)
+            .flat_map(|i| format!("{i},").into_bytes())
+            .collect();
         assert_eq!(seen, expected, "coalescing must not reorder or drop bytes");
     }
 }

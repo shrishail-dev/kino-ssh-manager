@@ -3686,12 +3686,7 @@ dialog {
 /* Portalled to <body> and positioned in viewport coordinates by ExportMenu, so
    the sidebar's scroll container can't clip it. `right`/`top` from the base
    rule would fight the inline coordinates, hence the resets. */
-.export-dropdown--floating {
-  position: fixed;
-  right: auto;
-  bottom: auto;
-  z-index: var(--z-popover);
-}
+
 
 /* Popovers are struck, not floated: a hard offset shadow, never a blur halo. */
 .export-dropdown,
@@ -3712,9 +3707,12 @@ dialog {
    up visibly taller than it. */
 .modal-footer,
 .copilot-actions,
-.cta-row {
+.cta-row,
+.cron-raw-actions {
   align-items: flex-start;
 }
+/* .cron-editor-actions sets `center` for the checkbox label riding alongside;
+   centring keeps the siblings from stretching just as well. */
 
 .btn {
   font-family: var(--font-mono);
@@ -5261,6 +5259,762 @@ textarea.mono,
   text-transform: uppercase;
 }
 
+/* ── Cron ────────────────────────────────────────────────────────────────────*/
+
+.cron-modal {
+  width: min(940px, 96vw);
+  max-width: none;
+  height: min(700px, 92vh);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.cron-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  flex-shrink: 0;
+}
+
+.cron-toolbar-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.cron-tabs {
+  display: flex;
+  border: 1px solid var(--rule);
+  flex-shrink: 0;
+}
+
+.cron-tab {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  background: transparent;
+  border: 0;
+  color: color-mix(in srgb, var(--ink-paper) 50%, transparent);
+  cursor: pointer;
+  transition: color 140ms ease, background-color 140ms ease;
+}
+
+.cron-tab:hover { color: var(--ink-paper); }
+
+.cron-tab.active {
+  color: var(--ink-paper);
+  background: color-mix(in srgb, var(--ink-paper) 7%, transparent);
+  box-shadow: inset 0 -2px 0 0 var(--ink-accent);
+}
+
+/* Cron fires on the host's clock. Saying which clock, permanently, is the
+ * difference between "next run 04:00" meaning something and meaning nothing. */
+.cron-clock {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink-paper) 42%, transparent);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cron-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--rule);
+}
+
+.cron-env {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--rule);
+  background: color-mix(in srgb, var(--ink-paper) 3%, transparent);
+}
+
+.cron-env-line {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border: 1px solid var(--rule);
+  color: color-mix(in srgb, var(--ink-paper) 58%, transparent);
+}
+
+.cron-list { display: flex; flex-direction: column; }
+
+.cron-job {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 11px 14px;
+  border-bottom: 1px solid color-mix(in srgb, var(--rule) 55%, transparent);
+  transition: background-color 140ms ease;
+}
+
+.cron-job::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--ink-accent);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.cron-job:hover { background: color-mix(in srgb, var(--ink-paper) 4%, transparent); }
+.cron-job:hover::before { transform: scaleY(1); }
+
+/* A paused job is still worth reading - it's dimmed, not hidden. */
+.cron-job.disabled .cron-job-spec,
+.cron-job.disabled .cron-job-cmd { opacity: 0.55; }
+
+.cron-job-main { flex: 1; min-width: 0; }
+
+.cron-job-comment {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-accent);
+  margin: 0 0 5px;
+}
+
+.cron-job-when {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.cron-job-spec {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--ink-paper);
+  border: 1px solid var(--rule);
+  padding: 1px 7px;
+  white-space: nowrap;
+}
+
+.cron-job-desc {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--ink-paper) 78%, transparent);
+}
+
+.cron-job-badge {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border: 1px solid var(--rule);
+  color: color-mix(in srgb, var(--ink-paper) 50%, transparent);
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent 0 4px,
+    color-mix(in srgb, var(--ink-paper) 6%, transparent) 4px 8px
+  );
+}
+
+.cron-job-cmd {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: color-mix(in srgb, var(--ink-paper) 52%, transparent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cron-job-next {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink-paper) 38%, transparent);
+  font-variant-numeric: tabular-nums;
+  margin: 5px 0 0;
+}
+
+.cron-job-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* ── Cron: editor ────────────────────────────────────────────────────────────*/
+
+.cron-editor {
+  flex-shrink: 0;
+  border: 1px solid var(--rule);
+  border-top: 3px solid var(--ink-accent);
+  background: color-mix(in srgb, var(--ink-paper) 3%, transparent);
+  padding: 12px 14px 14px;
+  margin-top: 10px;
+  animation: wipe-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cron-editor-title {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--ink-accent);
+  margin: 0 0 10px;
+}
+
+.cron-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 11px;
+}
+
+.cron-preset {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border: 1px solid var(--rule);
+  background: transparent;
+  color: color-mix(in srgb, var(--ink-paper) 55%, transparent);
+  cursor: pointer;
+  transition: color 140ms ease, border-color 140ms ease;
+}
+
+.cron-preset:hover { color: var(--ink-paper); border-color: var(--ink-paper); }
+
+.cron-preset.active {
+  color: var(--ink-accent);
+  border-color: var(--ink-accent);
+}
+
+.cron-fields {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 9px;
+}
+
+.cron-field { display: block; min-width: 0; }
+.cron-field-wide { margin-bottom: 9px; }
+
+.cron-field span {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink-paper) 45%, transparent);
+  margin-bottom: 4px;
+}
+
+.cron-field input {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  padding: 7px 9px;
+  margin: 0;
+}
+
+.cron-fields .cron-field input { text-align: center; }
+
+.cron-preview {
+  border-left: 2px solid var(--ink-verdigris);
+  padding: 7px 11px;
+  margin-bottom: 11px;
+  background: color-mix(in srgb, var(--ink-paper) 4%, transparent);
+}
+
+.cron-preview.invalid { border-left-color: var(--red); }
+
+.cron-preview-desc {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: var(--ink-paper);
+  margin: 0;
+}
+
+.cron-preview.invalid .cron-preview-desc { color: var(--red); }
+
+.cron-preview-runs {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  color: color-mix(in srgb, var(--ink-paper) 42%, transparent);
+  font-variant-numeric: tabular-nums;
+  margin: 4px 0 0;
+}
+
+.cron-editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cron-enabled {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink-paper) 55%, transparent);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* The base `input` rule is width:100%; a bare checkbox would stretch. */
+.cron-enabled input[type="checkbox"] {
+  width: auto;
+  padding: 0;
+  margin: 0;
+  accent-color: var(--ink-accent);
+}
+
+/* ── Cron: raw ───────────────────────────────────────────────────────────────*/
+
+.cron-raw {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.cron-hint {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  line-height: 1.7;
+  color: color-mix(in srgb, var(--ink-paper) 45%, transparent);
+  margin: 0;
+}
+
+.cron-hint code {
+  font-family: var(--font-mono);
+  color: color-mix(in srgb, var(--ink-paper) 70%, transparent);
+}
+
+.cron-raw-text {
+  flex: 1;
+  min-height: 0;
+  resize: none;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.7;
+  letter-spacing: 0.02em;
+  padding: 12px 14px;
+  border: 1px solid var(--rule);
+  background: var(--bg);
+  color: var(--ink-paper);
+  white-space: pre;
+  overflow: auto;
+}
+
+.cron-raw-text:focus {
+  outline: none;
+  border-color: var(--ink-accent);
+}
+
+.cron-raw-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ── What's new ──────────────────────────────────────────────────────────────
+ * The once-per-upgrade card, over the unlock screen. It borrows the title
+ * card's display type deliberately: this is the second thing the app has ever
+ * said to you, and it should look like it belongs to the same title sequence.
+ */
+
+.whatsnew {
+  width: min(560px, 94vw);
+  max-width: none;
+  padding: 0;
+}
+
+.whatsnew-head {
+  position: relative;
+  padding: 18px 22px 12px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.whatsnew-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ink-accent);
+  margin: 0 0 4px;
+}
+
+.whatsnew-version {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--ink-paper);
+  margin: 0;
+}
+
+.whatsnew-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+
+.whatsnew-headline {
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--ink-paper) 72%, transparent);
+  margin: 0;
+  padding: 14px 22px 4px;
+}
+
+.whatsnew-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px 22px 4px;
+}
+
+.whatsnew-item {
+  display: flex;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--rule) 55%, transparent);
+}
+
+.whatsnew-item:last-child { border-bottom: 0; }
+
+/* A reel number, not a bullet. */
+.whatsnew-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: color-mix(in srgb, var(--ink-accent) 80%, transparent);
+  padding-top: 2px;
+  flex-shrink: 0;
+}
+
+.whatsnew-body { min-width: 0; }
+
+.whatsnew-title {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  color: var(--ink-paper);
+  margin: 0 0 3px;
+}
+
+.whatsnew-detail {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.85;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--ink-paper) 52%, transparent);
+  margin: 0;
+}
+
+.whatsnew-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 22px 18px;
+  border-top: 1px solid var(--rule);
+}
+
+.whatsnew-foot-note {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink-paper) 34%, transparent);
+  margin-left: auto;
+}
+
+/* ── Key audit ───────────────────────────────────────────────────────────────*/
+
+.audit-modal {
+  width: min(880px, 96vw);
+  max-width: none;
+  height: min(680px, 92vh);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.audit-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  flex-shrink: 0;
+}
+
+.audit-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.audit-chip {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid var(--rule);
+  color: color-mix(in srgb, var(--ink-paper) 55%, transparent);
+}
+
+/* Severity is carried by one hairline, not by a filled block: a panel of red
+   boxes reads as an emergency, and most of what this finds is not one. */
+.audit-chip.sev-high { border-left: 2px solid var(--red); color: var(--ink-paper); }
+.audit-chip.sev-medium { border-left: 2px solid var(--ink-accent); }
+.audit-chip.sev-low { border-left: 2px solid var(--ink-verdigris); }
+
+.audit-scope {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink-paper) 36%, transparent);
+}
+
+.audit-toolbar .btn { margin-left: auto; flex-shrink: 0; }
+
+.audit-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--rule);
+}
+
+.audit-host {
+  border-bottom: 1px solid color-mix(in srgb, var(--rule) 55%, transparent);
+  border-left: 2px solid transparent;
+  transition: background-color 140ms ease;
+}
+
+.audit-host.sev-high { border-left-color: var(--red); }
+.audit-host.sev-medium { border-left-color: var(--ink-accent); }
+.audit-host.sev-low { border-left-color: var(--ink-verdigris); }
+.audit-host.busy { background: color-mix(in srgb, var(--ink-paper) 5%, transparent); }
+
+.audit-host-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+.audit-host-toggle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.audit-host-name {
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  letter-spacing: 0.02em;
+  color: var(--ink-paper);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.audit-host-key {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: color-mix(in srgb, var(--ink-paper) 45%, transparent);
+  white-space: nowrap;
+}
+
+.audit-count {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink-paper) 38%, transparent);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.audit-progress {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-verdigris);
+  white-space: nowrap;
+  animation: carrier 2.4s ease-out infinite;
+}
+
+.audit-confirm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.audit-confirm-text {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink-paper) 55%, transparent);
+  max-width: 320px;
+}
+
+/* The state is carried by the rule, the message by ink. A sentence set in
+   verdigris or marigold is legible enough on bitumen and washes out completely
+   on paper - and this is the one message in the panel that has to be read. */
+.audit-outcome {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.7;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--ink-paper) 78%, transparent);
+  border-left: 2px solid var(--ink-verdigris);
+  background: color-mix(in srgb, var(--ink-paper) 4%, transparent);
+  margin: 0 12px 10px;
+  padding: 7px 10px;
+}
+
+/* Installed but not finished: the new key works, the old one is still there. */
+.audit-outcome.partial { border-left-color: var(--yellow); }
+
+.audit-detail {
+  padding: 0 12px 11px;
+}
+
+.audit-fingerprint {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--ink-paper) 40%, transparent);
+  margin: 0 0 9px;
+  word-break: break-all;
+}
+
+.audit-tag {
+  font-size: 8.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border: 1px solid var(--rule);
+  padding: 1px 5px;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+.audit-finding {
+  border-left: 2px solid var(--rule);
+  padding: 6px 10px;
+  margin-bottom: 7px;
+}
+
+.audit-finding.sev-high { border-left-color: var(--red); }
+.audit-finding.sev-medium { border-left-color: var(--ink-accent); }
+.audit-finding.sev-low { border-left-color: var(--ink-verdigris); }
+
+.audit-finding-title {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  color: var(--ink-paper);
+  margin: 0 0 3px;
+}
+
+.audit-sev {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink-paper) 42%, transparent);
+}
+
+.audit-finding-detail {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.8;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--ink-paper) 52%, transparent);
+  margin: 0;
+}
+
+.audit-clean-toggle {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-align: left;
+  padding: 10px 12px;
+  border: 0;
+  background: transparent;
+  color: color-mix(in srgb, var(--ink-paper) 38%, transparent);
+  cursor: pointer;
+  transition: color 140ms ease;
+}
+
+.audit-clean-toggle:hover { color: var(--ink-paper); }
+
+.audit-footnote {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  line-height: 1.9;
+  letter-spacing: 0.08em;
+  color: color-mix(in srgb, var(--ink-paper) 34%, transparent);
+  margin: 9px 0 0;
+}
+
 /* ── Command palette ─────────────────────────────────────────────────────────*/
 
 .palette-overlay {
@@ -5859,7 +6613,8 @@ textarea.mono,
 }
 
 :root[data-theme-dark="0"] :is(.export-dropdown, .settings-dropdown, .fwd-dropdown,
-  .term-search, .term-sel-menu, .context-menu, .app-toast) {
+  .term-search, .term-sel-menu, .context-menu, .app-toast,
+  .tools-dropdown, .new-dropdown, .sel-list) {
   box-shadow: 6px 6px 0 -1px color-mix(in srgb, var(--text) 16%, transparent);
 }
 
@@ -5875,6 +6630,14 @@ textarea.mono,
    starts reading as a dirty screen, so it's pulled most of the way down. */
 :root[data-theme-dark="0"] :is(.app-root, .unlock-screen, .settings-page)::after {
   opacity: 0.14;
+}
+
+/* Light themes put a near-white panel on a near-white page, so the border has
+   to do the work the shadow does on dark. Sides and bottom only: `border-color`
+   is a shorthand and would take the accent top rule with it. */
+:root[data-theme-dark="0"] :is(.tools-dropdown, .new-dropdown, .sel-list, .export-dropdown) {
+  border-inline-color: color-mix(in srgb, var(--text) 22%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--text) 22%, transparent);
 }
 
 /* ── Reduced motion ──────────────────────────────────────────────────────────*/
@@ -5998,4 +6761,227 @@ textarea.mono,
    colour-mix to resolve per surface. */
 :root[data-lite="1"] :is(.app-header, .sidebar, .tab-bar) {
   background-color: var(--surface);
+}
+
+/* ── Tools menu ──────────────────────────────────────────────────────────────
+ * Files, Docker, Metrics, Copilot, Processes and Record, behind one button.
+ * Six separate buttons appeared and disappeared depending on the session, so
+ * the tab bar's width shifted as you moved between tabs; one menu holds it
+ * steady and leaves room for real labels.
+ */
+.tools-wrap { position: relative; }
+
+/* Recording outlives the menu being open, so it needs a mark on the trigger. */
+.tools-rec-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--red);
+  flex: none;
+  animation: carrier 2.4s ease-out infinite;
+}
+
+.tools-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 232px;
+  padding: 4px;
+  z-index: var(--z-popover);
+  /* Fully opaque: an overlay that lets the list behind it show through has no
+     edge of its own on a light theme, where panel and page are both near-white. */
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-top: 2px solid var(--ink-accent);
+  box-shadow: 6px 6px 0 -1px color-mix(in srgb, var(--bg) 88%, transparent);
+}
+
+.tools-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  border-left: 2px solid transparent;
+  color: color-mix(in srgb, var(--ink-paper) 72%, transparent);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 140ms ease, color 140ms ease, border-left-color 140ms ease;
+}
+
+.tools-item:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ink-paper) 6%, transparent);
+  border-left-color: var(--ink-accent);
+  color: var(--ink-paper);
+}
+
+/* Listed but not runnable here - kept visible so the reason can be shown. */
+.tools-item:disabled {
+  color: color-mix(in srgb, var(--ink-paper) 30%, transparent);
+  cursor: default;
+}
+
+.tools-item.active { color: var(--red); }
+.tools-item.active .tools-item-icon { color: var(--red); }
+
+.tools-item-icon {
+  display: flex;
+  flex: none;
+  color: color-mix(in srgb, var(--ink-paper) 55%, transparent);
+}
+.tools-item:hover:not(:disabled) .tools-item-icon { color: var(--ink-accent); }
+
+.tools-item-label { flex: 1; min-width: 0; }
+
+.tools-item-note {
+  font-size: 8.5px;
+  letter-spacing: 0.12em;
+  color: color-mix(in srgb, var(--ink-paper) 45%, transparent);
+  flex: none;
+}
+
+/* ── Sidebar "New" menu ──────────────────────────────────────────────────────
+ * Add host / local shell / import profile / import SSH config. Four buttons
+ * wrapping onto two rows in a narrow sidebar, three of them reading
+ * "Import"-something, became one primary button and a menu with room to say
+ * what each option actually does.
+ */
+.new-wrap { flex: 1; min-width: 0; }
+
+.new-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+/* Wider than the tools menu: these rows carry a second line of explanation. */
+.new-dropdown { min-width: 258px; }
+
+.new-item { align-items: flex-start; }
+
+.new-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.new-item-hint {
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  text-transform: none;
+  color: color-mix(in srgb, var(--ink-paper) 48%, transparent);
+}
+
+/* ── Themed select ───────────────────────────────────────────────────────────
+ * Replaces the native control, whose popup list is drawn by the platform and
+ * ignores this stylesheet - on Linux it opened in the system's colours and font
+ * regardless of the theme. Trigger keeps the old .settings-select look so
+ * nothing else had to move.
+ */
+.sel-wrap { position: relative; display: inline-flex; min-width: 0; }
+
+.sel-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 9px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-align: left;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  color: var(--ink-paper);
+  cursor: pointer;
+  transition: border-color 140ms ease;
+}
+
+.sel-trigger:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--ink-paper) 34%, var(--rule));
+}
+.sel-trigger:focus-visible { outline: 2px solid var(--ink-accent); outline-offset: 2px; }
+.sel-trigger:disabled { opacity: 0.5; cursor: default; }
+
+.sel-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sel-caret { flex: none; color: color-mix(in srgb, var(--ink-paper) 45%, transparent); }
+
+.sel-list {
+  position: fixed;
+  z-index: var(--z-popover);
+  min-width: 180px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-top: 2px solid var(--ink-accent);
+  box-shadow: 6px 6px 0 -1px color-mix(in srgb, var(--bg) 88%, transparent);
+}
+
+/* Fifteen themes need to scroll rather than run off the screen. */
+.sel-scroll { max-height: 46vh; overflow-y: auto; }
+
+.sel-option {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  padding: 7px 10px;
+  background: none;
+  border: none;
+  border-left: 2px solid transparent;
+  color: color-mix(in srgb, var(--ink-paper) 70%, transparent);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease, border-left-color 120ms ease;
+}
+
+.sel-option:hover {
+  background: color-mix(in srgb, var(--ink-paper) 6%, transparent);
+  color: var(--ink-paper);
+}
+
+.sel-option.selected {
+  color: var(--ink-paper);
+  border-left-color: var(--ink-accent);
+  background: color-mix(in srgb, var(--ink-accent) 10%, transparent);
+}
+
+.sel-option-hint {
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  color: color-mix(in srgb, var(--ink-paper) 48%, transparent);
+}
+
+/* Required on every menu positioned by useAnchoredMenu.
+ *
+ * Those menus are portalled to <body> and given viewport coordinates, so they
+ * must be `fixed`, and any `right`/`bottom` from the class they borrow their
+ * looks from has to be cleared. Leaving `right: 0` set alongside an inline
+ * `left` stretches the box to the full width of the document; the hook then
+ * measures that width and computes a negative `left`, putting the menu
+ * off-screen. It renders, but nowhere you can see it. */
+
+/* Lives at the very end of the file on purpose. It competes with the classes
+ * these menus borrow their looks from (.tools-dropdown, .sel-list), and every
+ * one of those is a single class too - so specificity ties and source order is
+ * what decides. Anything appended below this point must not set position,
+ * right or bottom on a menu. */
+.anchored-menu {
+  position: fixed;
+  right: auto;
+  bottom: auto;
+  z-index: var(--z-popover);
 }

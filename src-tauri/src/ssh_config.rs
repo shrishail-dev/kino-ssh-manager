@@ -70,7 +70,11 @@ fn block_to_hosts(block: &Block, default_user: Option<&str>) -> Vec<Host> {
             .map(|s| s.trim().to_string())
             .filter(|s| !s.is_empty());
 
-        let default_auth = if private_key.is_some() { "SshKey" } else { "Agent" };
+        let default_auth = if private_key.is_some() {
+            "SshKey"
+        } else {
+            "Agent"
+        };
 
         out.push(Host {
             id: String::new(),
@@ -101,6 +105,7 @@ fn block_to_hosts(block: &Block, default_user: Option<&str>) -> Vec<Host> {
             proxy_password: None,
             jump_host: None,
             jump: None,
+            key_added_at: None,
         });
     }
     out
@@ -119,7 +124,10 @@ pub fn parse(text: &str, default_user: Option<&str>) -> Vec<Host> {
         }
         // Split "Key value..." on the first run of whitespace or an '='.
         let (key, value) = match line.split_once(|c: char| c.is_whitespace() || c == '=') {
-            Some((k, v)) => (k.trim().to_lowercase(), v.trim().trim_matches('"').to_string()),
+            Some((k, v)) => (
+                k.trim().to_lowercase(),
+                v.trim().trim_matches('"').to_string(),
+            ),
             None => (line.to_lowercase(), String::new()),
         };
 
@@ -247,7 +255,8 @@ pub fn render_block(hosts: &[Host]) -> (String, usize) {
 pub fn export(hosts: &[Host]) -> Result<usize, String> {
     let path = ssh_config_path().ok_or("Could not locate your home directory")?;
     let dir = path.parent().ok_or("Invalid ssh config path")?;
-    std::fs::create_dir_all(dir).map_err(|e| format!("Could not create {}: {}", dir.display(), e))?;
+    std::fs::create_dir_all(dir)
+        .map_err(|e| format!("Could not create {}: {}", dir.display(), e))?;
 
     let existing = std::fs::read_to_string(&path).unwrap_or_default();
     let kept = strip_managed_block(&existing);
@@ -333,7 +342,10 @@ Host bastion gw
     }
 
     fn host(name: &str, hostname: &str, port: u16) -> Host {
-        let mut hosts = parse(&format!("Host {name}\n  HostName {hostname}\n  User bob\n"), None);
+        let mut hosts = parse(
+            &format!("Host {name}\n  HostName {hostname}\n  User bob\n"),
+            None,
+        );
         let mut h = hosts.remove(0);
         h.port = port;
         h
@@ -351,7 +363,8 @@ Host bastion gw
 
     #[test]
     fn strip_handles_unterminated_block() {
-        let text = format!("Host mine\n  HostName keep.me\n{BLOCK_START}\nHost gen\n  HostName x\n");
+        let text =
+            format!("Host mine\n  HostName keep.me\n{BLOCK_START}\nHost gen\n  HostName x\n");
         let kept = strip_managed_block(&text);
         assert!(kept.contains("keep.me"));
         assert!(!kept.contains("Host gen"));

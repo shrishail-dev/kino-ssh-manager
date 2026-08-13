@@ -560,7 +560,7 @@
   <section class="hero">
     <div class="wrap">
       <div class="hero-inner reel">
-        <span class="pill"><span class="tag">v0.7.1</span> New: faster terminal, output highlighting &amp; drawn port forwards</span>
+        <span class="pill"><span class="tag">v0.8.0</span> New: cron editor, key audit &amp; rotation, copy output as an image</span>
         <h1>Every SSH host<br><span class="soft">without the cloud</span><span class="stop">.</span></h1>
         <p class="lead">
           A cross-platform credential manager and terminal. Your hosts, keys, and passwords
@@ -632,12 +632,24 @@
       </div>
       <div class="features">
         <div class="feat">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h3>Cron editor <span class="new">New</span></h3><p>Reads the host's crontab and writes every schedule out in plain English - "At 04:00 on Tuesday" - with the next times each job will fire, in the host's clock. Only the lines you change are rewritten, so comments and <span class="mono">PATH=</span> survive untouched.</p>
+        </div>
+        <div class="feat">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 4.5-3.2 7.5-8 9-4.8-1.5-8-4.5-8-9V6l8-3z" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h3>Key audit &amp; rotation <span class="new">New</span></h3><p>Checks every stored key for weak algorithms, reuse across hosts and age - entirely on your machine. One click rotates a host to a fresh ed25519 key: install, prove it authenticates on a second connection, <em>then</em> remove the old one.</p>
+        </div>
+        <div class="feat">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5-4 4-2-2-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h3>Copy output as an image <span class="new">New</span></h3><p>Select terminal output and get a PNG with its colours, bold and highlighting intact, captioned with the host and time. The buffer cells are re-rendered rather than screenshotted, so it's sharp and trimmed to the content.</p>
+        </div>
+        <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4" stroke-linecap="round"/></svg></div>
           <h3>Encrypted vault</h3><p>Argon2 key derivation and AES-256-GCM. One master password unlocks every host, key, and snippet.</p>
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M13 15h4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <h3>SSH terminal <span class="new">New</span></h3><p>A full xterm.js terminal per host, with split panes, broadcast input, adjustable font size, and scrollback configurable up to 200,000 lines.</p>
+          <h3>SSH terminal</h3><p>A full xterm.js terminal per host, with split panes, broadcast input, adjustable font size, and scrollback configurable up to 200,000 lines.</p>
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="4"/><path d="M11 11l8 8M16 16l2-2M19 19l2-2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
@@ -645,7 +657,7 @@
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h11l-3-3M4 7l3 3M20 17H9l3 3M20 17l-3-3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <h3>Port forwarding <span class="new">New</span></h3><p>Local (<span class="mono">-L</span>), remote (<span class="mono">-R</span>) and dynamic SOCKS5 (<span class="mono">-D</span>) tunnels, started and stopped per session - each drawn as a diagram showing which end opens the port and which way traffic flows.</p>
+          <h3>Port forwarding</h3><p>Local (<span class="mono">-L</span>), remote (<span class="mono">-R</span>) and dynamic SOCKS5 (<span class="mono">-D</span>) tunnels, started and stopped per session - each drawn as a diagram showing which end opens the port and which way traffic flows.</p>
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" stroke-linejoin="round"/></svg></div>
@@ -661,15 +673,15 @@
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h6M4 12h10M4 17h7" stroke-linecap="round"/><path d="M16 7h4M18 12h2M15 17h5" stroke-linecap="round"/></svg></div>
-          <h3>Output highlighting <span class="new">New</span></h3><p>Timestamps, severities, IP addresses, URLs and file paths are coloured from the active theme, in the spirit of MobaXterm. Never inside vim, htop or less, and never over output the host already coloured.</p>
+          <h3>Output highlighting</h3><p>Timestamps, severities, IP addresses, URLs and file paths are coloured from the active theme, in the spirit of MobaXterm. Never inside vim, htop or less, and never over output the host already coloured.</p>
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35" stroke-linecap="round"/><path d="M8.5 11h5" stroke-linecap="round"/></svg></div>
-          <h3>Find in terminal <span class="new">New</span></h3><p>Search reports how many matches there are and which one you're on, highlights every hit, and marks them on the scrollbar. Case-sensitive, whole-word and regular-expression toggles.</p>
+          <h3>Find in terminal</h3><p>Search reports how many matches there are and which one you're on, highlights every hit, and marks them on the scrollbar. Case-sensitive, whole-word and regular-expression toggles.</p>
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V5h16v2" stroke-linecap="round"/><path d="M9 20h6" stroke-linecap="round"/><path d="M12 5v15" stroke-linecap="round"/></svg></div>
-          <h3>Typography &amp; motion <span class="new">New</span></h3><p>Six bundled monospace faces for the terminal, an optional background override, and a choice of interface font including Atkinson Hyperlegible. A reduced-motion switch stops all animation and drops the decorative paint.</p>
+          <h3>Typography &amp; motion</h3><p>Six bundled monospace faces for the terminal, an optional background override, and a choice of interface font including Atkinson Hyperlegible. A reduced-motion switch stops all animation and drops the decorative paint.</p>
         </div>
         <div class="feat">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 4.5-3.2 7.5-8 9-4.8-1.5-8-4.5-8-9V6l8-3z" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
@@ -753,6 +765,7 @@
           <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="t"><b>Local-first by default.</b> The vault is an AES-256-GCM ciphertext on your disk. Plaintext never touches a server.</span></li>
           <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="t"><b>Argon2-derived key.</b> Your master password plus a random 16-byte salt derive the key. Nothing is stored in the clear.</span></li>
           <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="t"><b>Zero-knowledge sync.</b> Cloud sync uploads only the encrypted blob - GitHub never sees your secrets or master password.</span></li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="t"><b>Rotation that can't strand you.</b> A new key is proved on its own connection before the old one is removed, and the rewrite of <span class="mono">authorized_keys</span> is refused if the new key isn't in the result. The audit itself contacts nothing.</span></li>
           <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="t"><b>Memory hygiene.</b> Secrets are zeroized on lock; idle auto-lock and master-password re-keying are built in.</span></li>
           <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="t"><b>Encrypted sharing.</b> Exported host profiles are sealed with their own password - a separate Argon2 key, never your master password - so a profile can be handed to a teammate safely.</span></li>
           <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="t"><b>Relays are blind.</b> Agent mode keeps SSH end-to-end encrypted; a relay forwards ciphertext and cannot read a session even if you don't run it yourself.</span></li>
@@ -765,6 +778,8 @@
         <div class="row"><span class="k">key derivation</span><span class="v">Argon2</span></div>
         <div class="row"><span class="k">salt</span><span class="v">16 bytes · random</span></div>
         <div class="row"><span class="k">host keys</span><span class="v">TOFU · SHA256</span></div>
+        <div class="row"><span class="k">generated keys</span><span class="v">ed25519</span></div>
+        <div class="row"><span class="k">key audit</span><span class="v">local only</span></div>
         <div class="row"><span class="k">memory on lock</span><span class="v">zeroized</span></div>
         <div class="row"><span class="k">sync payload</span><span class="v">ciphertext only</span></div>
         <div class="row"><span class="k">profile export</span><span class="v">AES-256-GCM</span></div>

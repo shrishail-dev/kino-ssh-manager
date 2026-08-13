@@ -11,6 +11,8 @@ import { AboutModal } from "./AboutModal";
 import { RecordingsModal } from "./RecordingsModal";
 import { AiSettingsModal } from "./AiSettingsModal";
 import { KeybindingsModal } from "./KeybindingsModal";
+import { SecurityPanel } from "./SecurityPanel";
+import { Select } from "./Select";
 
 interface Props {
   onLock: () => void;
@@ -169,6 +171,7 @@ export function SettingsMenu({ onLock }: Props) {
   const [showAbout, setShowAbout] = useState(false);
   const [showAi, setShowAi] = useState(false);
   const [showKeys, setShowKeys] = useState(false);
+  const [showAudit, setShowAudit] = useState(false);
 
   const [cloudUrl, setCloudUrl] = useState("");
   const [cloudKey, setCloudKey] = useState("");
@@ -177,7 +180,7 @@ export function SettingsMenu({ onLock }: Props) {
 
   const anyModalOpen =
     showHistory || showRecordings || showSync || showSnippets ||
-    showChangePw || showAbout || showAi || showKeys;
+    showChangePw || showAbout || showAi || showKeys || showAudit;
 
   // Esc closes the page - but not while a sub-dialog is open (those own Esc).
   useEffect(() => {
@@ -305,18 +308,17 @@ export function SettingsMenu({ onLock }: Props) {
                 <>
                   <Group title="Appearance">
                     <Item label="Theme" desc="Applies to the app and every terminal.">
-                      <select className="settings-select" value={themeId} onChange={(e) => setTheme(e.target.value)}>
-                        <optgroup label="Dark">
-                          {THEMES.filter((t) => t.dark).map((t) => (
-                            <option key={t.id} value={t.id}>{t.name}</option>
-                          ))}
-                        </optgroup>
-                        <optgroup label="Light">
-                          {THEMES.filter((t) => !t.dark).map((t) => (
-                            <option key={t.id} value={t.id}>{t.name}</option>
-                          ))}
-                        </optgroup>
-                      </select>
+                      <Select
+                        className="settings-select"
+                        aria-label="Theme"
+                        value={themeId}
+                        onChange={setTheme}
+                        options={THEMES.map((t) => ({
+                          value: t.id,
+                          label: t.name,
+                          hint: t.dark ? "Dark" : "Light",
+                        }))}
+                      />
                     </Item>
 
                     <Item
@@ -330,29 +332,39 @@ export function SettingsMenu({ onLock }: Props) {
                       label="Interface font"
                       desc="The face used for the app's own text. Atkinson Hyperlegible is designed for maximum character distinction."
                     >
-                      <select
+                      <Select
                         className="settings-select"
+                        aria-label="Interface font"
                         value={appFont}
-                        onChange={(e) => setAppFont(e.target.value)}
-                      >
-                        {APP_FONTS.map((f) => (
-                          <option key={f.id} value={f.id}>
-                            {f.note ? `${f.label} - ${f.note}` : f.label}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={setAppFont}
+                        options={APP_FONTS.map((f) => ({
+                          value: f.id,
+                          label: f.label,
+                          hint: f.note || undefined,
+                          labelStyle:
+                            f.id === "system"
+                              ? undefined
+                              : { fontFamily: `"${f.id}", sans-serif` },
+                        }))}
+                      />
                     </Item>
                   </Group>
 
                   <Group title="Behavior">
                     <Item label="Auto-lock" desc="Lock the vault after this much inactivity.">
-                      <select className="settings-select" value={idleLockMinutes} onChange={(e) => setIdleLockMinutes(Number(e.target.value))}>
-                        <option value={0}>Off</option>
-                        <option value={5}>5 min</option>
-                        <option value={15}>15 min</option>
-                        <option value={30}>30 min</option>
-                        <option value={60}>1 hour</option>
-                      </select>
+                      <Select
+                        className="settings-select"
+                        aria-label="Idle auto-lock"
+                        value={String(idleLockMinutes)}
+                        onChange={(v) => setIdleLockMinutes(Number(v))}
+                        options={[
+                          { value: "0", label: "Never" },
+                          { value: "5", label: "5 minutes" },
+                          { value: "15", label: "15 minutes" },
+                          { value: "30", label: "30 minutes" },
+                          { value: "60", label: "1 hour" },
+                        ]}
+                      />
                     </Item>
                     <Item label="Auto-reconnect" desc="Re-establish dropped SSH sessions with backoff.">
                       <OnOff value={autoReconnect} onChange={setAutoReconnect} />
@@ -361,12 +373,18 @@ export function SettingsMenu({ onLock }: Props) {
                       <OnOff value={restoreSessionEnabled} onChange={setRestoreSessionEnabled} />
                     </Item>
                     <Item label="Host health checks" desc="Probe each host's SSH port and show a status dot in the sidebar.">
-                      <select className="settings-select" value={healthIntervalSec} onChange={(e) => setHealthIntervalSec(Number(e.target.value))}>
-                        <option value={0}>Off</option>
-                        <option value={30}>Every 30s</option>
-                        <option value={60}>Every 1 min</option>
-                        <option value={300}>Every 5 min</option>
-                      </select>
+                      <Select
+                        className="settings-select"
+                        aria-label="Host health checks"
+                        value={String(healthIntervalSec)}
+                        onChange={(v) => setHealthIntervalSec(Number(v))}
+                        options={[
+                          { value: "0", label: "Off" },
+                          { value: "30", label: "Every 30s" },
+                          { value: "60", label: "Every 1 min" },
+                          { value: "300", label: "Every 5 min" },
+                        ]}
+                      />
                     </Item>
                   </Group>
 
@@ -378,32 +396,38 @@ export function SettingsMenu({ onLock }: Props) {
                       label="Scrollback"
                       desc="Lines of history kept per terminal. More costs memory; Maximum is 200,000 lines."
                     >
-                      <select
+                      <Select
                         className="settings-select"
-                        value={scrollbackLines}
-                        onChange={(e) => setScrollbackLines(Number(e.target.value))}
-                      >
-                        <option value={1000}>1,000</option>
-                        <option value={5000}>5,000</option>
-                        <option value={20000}>20,000</option>
-                        <option value={50000}>50,000</option>
-                        <option value={200000}>Maximum</option>
-                      </select>
+                        aria-label="Scrollback"
+                        value={String(scrollbackLines)}
+                        onChange={(v) => setScrollbackLines(Number(v))}
+                        options={[
+                          { value: "1000", label: "1,000" },
+                          { value: "5000", label: "5,000" },
+                          { value: "20000", label: "20,000" },
+                          { value: "50000", label: "50,000" },
+                          { value: "200000", label: "Maximum" },
+                        ]}
+                      />
                     </Item>
 
                     <Item
                       label="Font"
                       desc="Bundled with the app, so it renders the same on every machine and offline."
                     >
-                      <select
+                      <Select
                         className="settings-select"
+                        aria-label="Terminal font"
                         value={terminalFont}
-                        onChange={(e) => setTerminalFont(e.target.value)}
-                      >
-                        {TERMINAL_FONTS.map((f) => (
-                          <option key={f} value={f}>{f}</option>
-                        ))}
-                      </select>
+                        onChange={setTerminalFont}
+                        options={TERMINAL_FONTS.map((f) => ({
+                          value: f,
+                          label: f,
+                          // Drawn in the face it names - the whole point of a
+                          // font picker, and impossible with a native select.
+                          labelStyle: { fontFamily: terminalFontStack(f) },
+                        }))}
+                      />
                     </Item>
 
                     <Item
@@ -545,6 +569,12 @@ export function SettingsMenu({ onLock }: Props) {
                       onClick={() => setShowChangePw(true)}
                     />
                     <ActionItem
+                      label="Key audit"
+                      desc="Checks every stored key for weak algorithms, reuse and age, and rotates one when you say so. Runs on this machine; no host is contacted."
+                      buttonLabel="Open…"
+                      onClick={() => setShowAudit(true)}
+                    />
+                    <ActionItem
                       label="Connection history"
                       desc="When each host was used, stored encrypted."
                       buttonLabel="View…"
@@ -604,6 +634,7 @@ export function SettingsMenu({ onLock }: Props) {
       {showAi && <AiSettingsModal onClose={() => setShowAi(false)} />}
       {showKeys && <KeybindingsModal onClose={() => setShowKeys(false)} />}
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
+      {showAudit && <SecurityPanel onClose={() => setShowAudit(false)} />}
         </>,
         document.body
       )}

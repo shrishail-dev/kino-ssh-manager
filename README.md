@@ -13,14 +13,17 @@ A secure, cross-platform SSH credential manager and terminal, built with [Tauri 
 - **Port forwarding** - local (`-L`), remote (`-R`), and dynamic SOCKS5 (`-D`) tunnels, started and stopped independently per session; optional dial-through SOCKS5/HTTP proxy per host. Each tunnel is drawn as a three-station diagram showing which machine opens the port, where the destination is resolved, and which way traffic flows - so `-L` and `-R` can't be confused.
 - **SFTP file browser & editor** - browse, upload/download with progress, rename, delete, new folder, chmod, and edit remote files in a built-in Monaco editor that saves straight back over SFTP.
 - **AI copilot (optional)** - a bring-your-own-key assistant in the terminal, powered by [OpenRouter](https://openrouter.ai). Ask about a host, explain an error, or select output and send it to the copilot. The key is encrypted in the vault; off by default.
-- **Docker, metrics & processes** - manage containers/images/volumes/networks with live logs and one-click shells, watch a streaming CPU/mem/disk/network dashboard, and list/kill processes - all over the SSH connection.
+- **Docker, metrics, processes & cron** - manage containers/images/volumes/networks with live logs and one-click shells, watch a streaming CPU/mem/disk/network dashboard, list/kill processes, and edit the host's crontab - all over the SSH connection. Together with the file browser and session recording they live behind one **Tools** menu in the tab bar.
+- **Cron editor** - reads the host's crontab and writes every schedule out in plain English ("At 04:00 on Tuesday"), with the next times each job will fire in the host's clock. Add, edit, pause and remove jobs, or edit the file directly. Only the lines you change are rewritten, so comments, `PATH=`/`MAILTO=` and anything unrecognised survive untouched, and a save is refused outright if the crontab changed on the host in the meantime.
+- **Key audit & rotation** - checks every stored key for weak algorithms, reuse across hosts and age, entirely on your machine. One click rotates a host to a fresh ed25519 key: install, prove it authenticates on a second connection, *then* remove the old one - never the other way round.
+- **Copy output as an image** - select terminal output and get a PNG with its colours, bold and highlighting intact, captioned with the host and time. Not a screenshot: the buffer cells are re-rendered, so the image is sharp and trimmed to the content.
 - **Host health indicators** - optional background probe showing a reachability dot and round-trip latency per host in the sidebar.
 - **Session recording** - record any SSH or local session to an asciicast file and replay it in-app.
 - **Agent connection mode (optional)** - reach hosts that have **no inbound SSH port** (behind NAT, CGNAT, or a firewall) through a relay, using a companion agent that dials out. Off by default; enable it under Settings - Kino Agent. See [Agent connection mode](#agent-connection-mode).
 - **Encrypted profile sharing** - export a host as a password-encrypted `.sshm` file (Argon2 + AES-256-GCM) to share it safely; the recipient needs only the password to import it.
 - **Snippets** - a reusable command library; selected snippets auto-run on connect, per host.
 - **Cloud sync (optional)** - sync the *encrypted* vault to a private GitHub repo (Contents API, sha-based conflict detection). Optional auto-sync (pull on unlock, push on change).
-- **In-app updates** - install a new signed release from within About, with a fallback to the release page (AppImage on Linux; `.deb`/`.rpm` update via the system package manager).
+- **In-app updates** - install a new signed release from within About, with a fallback to the release page (AppImage on Linux; `.deb`/`.rpm` update via the system package manager). After an upgrade the unlock screen shows what changed in that version, once.
 - **Security niceties** - idle auto-lock, change-master-password (re-key), TOFU host-key verification, secrets zeroized in memory on lock.
 - **Appearance** - 15 themes, six bundled monospace faces for the terminal plus an optional background override, and a choice of interface font including [Atkinson Hyperlegible](https://www.brailleinstitute.org/freefont/). Every face ships with the app, so nothing is fetched at runtime. A **reduced motion & effects** switch stops all animation and drops the decorative paint layers if you want the interface cheaper to draw.
 - **Quality of life** - host health & latency, home favorites, session restore on unlock, customizable keyboard shortcuts, host groups, per-host accent colors, pinned/renamable panes, searchable connection history, and `~/.ssh/config` import/export.
@@ -57,6 +60,8 @@ installation and self-hosting.
 - The vault (`vault.enc`) is an AES-256-GCM ciphertext; the key is derived from your master password with Argon2 and a random 16-byte salt stored alongside the ciphertext.
 - History and the snippet library are stored as sibling encrypted files under the same key.
 - Cloud sync uploads only the encrypted blobs - the server (GitHub) never sees plaintext or your master password.
+- The key audit runs entirely on your machine, against the keys already in the vault. No host is contacted to produce the report, and nothing is sent anywhere.
+- Key rotation never removes a key it hasn't first proved it can do without: the new key is verified on its own connection before the old one is touched, and the rewrite of `authorized_keys` is refused if the new key isn't present in the result.
 - See [SECURITY.md](SECURITY.md) for the threat model, what is and isn't protected, and how to report vulnerabilities.
 
 ## Getting started

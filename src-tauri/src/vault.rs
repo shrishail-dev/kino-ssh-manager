@@ -94,6 +94,14 @@ pub struct Host {
     /// attached by the frontend at connect time. Not part of the saved config.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub jump: Option<Box<Host>>,
+    /// Unix seconds when this host's key was generated or last rotated.
+    ///
+    /// `None` for every key that predates this field, and the audit says
+    /// "unknown" rather than guessing: a key's age isn't recoverable from the
+    /// key itself, and inventing one from a file date would be worse than
+    /// admitting the gap.
+    #[serde(default)]
+    pub key_added_at: Option<i64>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -256,6 +264,7 @@ mod tests {
             proxy_password: None,
             jump_host: None,
             jump: None,
+            key_added_at: None,
         }]
     }
 
